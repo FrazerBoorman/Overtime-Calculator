@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AVD Overtime + Calendar Picker (Responsive)</title>
+  <meta name="color-scheme" content="light dark">
+  <style>
+    :root { --card:#fff; --border:#e5e7eb; --text:#0f172a; --muted:#475569; --bg:#f8fafc; }
+    @media (prefers-color-scheme: dark) {
+      :root { --card:#0b1220; --border:#1f2937; --text:#e5e7eb; --muted:#94a3b8; --bg:#0f172a; }
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .wrap { padding: 24px; display: flex; justify-content: center; }
+    .card {
+      width: min(96vw, 1280px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 16px rgba(0,0,0,.06);
+      background: var(--card);
+    }
+    h1 { margin: 0 0 10px 0; font-size: 22px; }
+    h2 { margin: 18px 0 8px; font-size: 18px; }
+    label { font-weight: 600; font-size: 14px; display:block; margin-bottom: 6px; }
+    input, select, button {
+      font-size: 16px; padding: 10px; border-radius: 10px;
+      border: 1px solid var(--border); width: 100%; background: transparent; color: var(--text);
+    }
+    button { cursor: pointer; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .grid.tight { gap: 10px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .chip { border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; background: transparent; font-size: 14px; }
+    .chip:active { transform: scale(0.98); }
+    .kpi {
+      display: grid; gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      margin-top: 12px;
+    }
+    .kpi > div { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; min-height: 72px; }
+    .big { font-size: 20px; font-weight: 700; }
+    .muted { color: var(--muted); font-size: 14px; }
+    .topbox { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .btn { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); width: 100%; }
+    .note { font-size: 12px; color: var(--muted); }
+    .ok { color: #16a34a; }
+    .warn { color: #dc2626; }
+    .sep { height: 1px; background: var(--border); margin: 14px 0; }
+    @media (min-width: 1400px){ .card { width: 1280px; } }
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="wrap">
+  <div class="card">
+    <h1>Daily Calculator – Grace(07:45–09:00) then Overtime(>17:00)</h1>
+
+    <div class="topbox">
+      <div class="grid">
+        <div>
+          <label for="jobRef">Job / Location</label>
+          <input id="jobRef" placeholder="e.g. The Minster – Axminster – EX13 5AQ">
+        </div>
+        <div>
+          <label for="eventPick">Recent events</label>
+          <select id="eventPick">
+            <option value="">— Load events then pick —</option>
+          </select>
+        </div>
+        <div>
+          <label for="calendarId">Calendar ID</label>
+          <input id="calendarId" value="bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com">
+        </div>
+        <div style="align-self:end">
+          <label>&nbsp;</label>
+          <button id="useSel" class="btn" type="button">Use selection</button>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:10px">
+        <div class="grid tight">
+          <button id="signin" class="btn" type="button">Sign in to Google</button>
+          <button id="fetchEvents" class="btn" type="button">Load last 7 days</button>
+        </div>
+        <div>
+          <label>From</label>
+          <input id="fromDate" placeholder="YYYY-MM-DD">
+        </div>
+        <div>
+          <label>To</label>
+          <input id="toDate" placeholder="YYYY-MM-DD">
+        </div>
+      </div>
+      <p class="note">Sign in, set a date range (defaults to last 7 days), click <b>Load last 7 days</b>, then pick an event and hit <b>Use selection</b>. All client‑side.</p>
+      <div id="authStatus" class="note">Status: Not signed in</div>
+    </div>
+
+    <p class="muted">Leave fixed at <b>07:45</b>. 07:45–09:00 = grace/unpaid travel. Everything after <b>17:00</b> is overtime. Works on iPhone/Edge.</p>
+
+    <div class="grid">
+      <div>
+        <label for="date">Date</label>
+        <input id="date" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD">
+      </div>
+      <div>
+        <label for="returnTimeTxt">Return home time</label>
+        <input id="returnTimeTxt" inputmode="numeric" autocomplete="off" placeholder="e.g. 18:15, 6:30pm, 1815">
+        <div class="chips">
+          <button class="chip" data-time="17:30" type="button">17:30</button>
+          <button class="chip" data-time="18:00" type="button">18:00</button>
+          <button class="chip" data-time="18:30" type="button">18:30</button>
+          <button class="chip" data-time="19:00" type="button">19:00</button>
+          <button class="chip" id="nowBtn" type="button">Now</button>
+        </div>
+      </div>
+      <div>
+        <label for="baseRate">Base hourly rate (£)</label>
+        <input id="baseRate" inputmode="decimal" value="15.70">
+      </div>
+      <div>
+        <label for="legacyOTRate">Overtime at legacy rate (£)</label>
+        <input id="legacyOTRate" inputmode="decimal" value="20.00">
+      </div>
+    </div>
+
+    <div style="margin-top:10px">
+      <button id="calcBtn" class="btn" type="button" style="width:auto">Calculate</button>
+    </div>
+
+    <h2>Results</h2>
+    <div class="kpi">
+      <div>
+        <div class="muted">Total worked (07:45 → return)</div>
+        <div class="big" id="allHours">—</div>
+      </div>
+      <div>
+        <div class="muted">Grace window (unpaid)</div>
+        <div class="big" id="graceHours">—</div>
+      </div>
+      <div>
+        <div class="muted">Core paid hours (09:00–17:00)</div>
+        <div class="big" id="coreHours">—</div>
+      </div>
+      <div>
+        <div class="muted">Overtime hours (>17:00)</div>
+        <div class="big" id="otHours">—</div>
+      </div>
+      <div>
+        <div class="muted">OT owed @ base rate</div>
+        <div class="big" id="otBase">—</div>
+      </div>
+      <div>
+        <div class="muted">OT owed @ £20</div>
+        <div class="big" id="otLegacy">—</div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <p class="note">Privacy: everything runs in your browser. Calendar access is read‑only and only for the selected date range.</p>
+  </div>
+  </div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    const CLIENT_ID = "105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com"; // Replace with your OAuth Web client ID
+    const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+
+    let accessToken = null;
+    let tokenClient = null;
+
+    function initAuth() {
+      if (!google || !google.accounts || !google.accounts.oauth2) return;
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        prompt: '',
+        callback: (resp) => {
+          if (resp && resp.access_token) {
+            accessToken = resp.access_token;
+            setStatus("Signed in", true);
+          } else {
+            setStatus("Sign-in failed", false);
+          }
+        }
+      });
+    }
+
+    function ensureDates() {
+      const now = new Date();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const start = new Date(end); start.setDate(start.getDate() - 6); start.setHours(0,0,0,0);
+      const fmt = d => d.toISOString().slice(0,10);
+      const fromEl = document.getElementById('fromDate');
+      const toEl = document.getElementById('toDate');
+      if (!fromEl.value) fromEl.value = fmt(start);
+      if (!toEl.value) toEl.value = fmt(end);
+      const dateEl = document.getElementById('date');
+      if (!dateEl.value) dateEl.value = fmt(now);
+    }
+
+    function setStatus(msg, ok) {
+      const el = document.getElementById('authStatus');
+      el.textContent = "Status: " + msg;
+      el.className = "note " + (ok ? "ok" : "warn");
+    }
+
+    async function signIn() {
+      if (!tokenClient) initAuth();
+      if (!tokenClient) { setStatus("Auth library not ready. Try again.", false); return; }
+      tokenClient.requestAccessToken();
+    }
+
+    function timeRangeISO(dateStr) {
+      const [y,m,d] = dateStr.split('-').map(Number);
+      const start = new Date(Date.UTC(y, m-1, d, 0,0,0));
+      const end = new Date(Date.UTC(y, m-1, d, 23,59,59));
+      return { timeMin: start.toISOString(), timeMax: end.toISOString() };
+    }
+
+    function spanISO(fromStr, toStr) {
+      const { timeMin } = timeRangeISO(fromStr);
+      const { timeMax } = timeRangeISO(toStr);
+      return { timeMin, timeMax };
+    }
+
+    async function fetchEvents() {
+      if (!accessToken) { setStatus("Sign in first", false); return; }
+      const calId = document.getElementById('calendarId').value.trim() || 'primary';
+      const fromStr = document.getElementById('fromDate').value.trim();
+      const toStr = document.getElementById('toDate').value.trim();
+      if (!fromStr || !toStr) { setStatus("Enter a date range", false); return; }
+      const { timeMin, timeMax } = spanISO(fromStr, toStr);
+
+      const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+      url.searchParams.set('singleEvents', 'true');
+      url.searchParams.set('orderBy', 'startTime');
+      url.searchParams.set('timeMin', timeMin);
+      url.searchParams.set('timeMax', timeMax);
+      url.searchParams.set('maxResults', '2500');
+
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (!res.ok) { setStatus(`API error ${res.status}`, false); return; }
+      const data = await res.json();
+      const sel = document.getElementById('eventPick');
+      sel.innerHTML = '<option value="">— Select recent event (optional) —</option>';
+      (data.items || []).forEach(ev => {
+        const title = ev.summary || '(no title)';
+        const opt = document.createElement('option');
+        opt.value = title; opt.textContent = title;
+        sel.appendChild(opt);
+      });
+      setStatus(`Loaded ${(data.items||[]).length} events`, true);
+    }
+
+    const LEAVE_MIN = 7*60 + 45;
+    const GRACE_END = 9*60;
+    const CORE_END = 17*60;
+
+    function nowHHMM() {
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mi = String(Math.round(d.getMinutes()/5)*5).padStart(2,'0');
+      return `${hh}:${mi}`;
+    }
+
+    function parseFlexibleTime(str) {
+      if (!str) return null;
+      str = String(str).trim().toLowerCase();
+      const isPM = /pm$/.test(str);
+      const isAM = /am$/.test(str);
+      str = str.replace(/[^\d:]/g, '');
+      let h=0,m=0;
+      if (str.includes(':')) { const [hh,mm='0']=str.split(':'); h=parseInt(hh,10); m=parseInt(mm,10); }
+      else if (str.length<=2) { h=parseInt(str||'0',10); m=0; }
+      else if (str.length===3) { h=parseInt(str.slice(0,1),10); m=parseInt(str.slice(1),10); }
+      else { h=parseInt(str.slice(0,2),10); m=parseInt(str.slice(2),10); }
+      if (Number.isNaN(h)||Number.isNaN(m)) return null;
+      if (isPM && h<12) h+=12;
+      if (isAM && h===12) h=0;
+      if (h<0||h>23||m<0||m>59) return null;
+      return h*60+m;
+    }
+
+    function fmtHours(mins){ if(mins==null||isNaN(mins))return '—'; const h=Math.floor(mins/60); const m=Math.round(mins%60); return `${h}h ${String(m).padStart(2,'0')}m`; }
+    function fmtMoney(pounds){ if(pounds==null||isNaN(pounds))return '—'; return `£${pounds.toFixed(2)}`; }
+
+    function calc(){
+      const rtStr = document.getElementById('returnTimeTxt').value || nowHHMM();
+      const baseRate = parseFloat((document.getElementById('baseRate').value || '15.70').replace(',','.'));
+      const legacyRate = parseFloat((document.getElementById('legacyOTRate').value || '20.00').replace(',','.'));
+      const returnMinRaw = parseFlexibleTime(rtStr);
+      if(returnMinRaw==null){ alert('Enter a valid time like 18:15, 6:30pm, or 1815.'); return; }
+      let endMin = returnMinRaw;
+      if(endMin < LEAVE_MIN) endMin += 24*60;
+
+      const totalWorked = Math.max(0, endMin - LEAVE_MIN);
+      const grace = Math.max(0, Math.min(endMin, GRACE_END) - LEAVE_MIN);
+
+      let core=0;
+      if(endMin <= GRACE_END) core=0;
+      else if(endMin < CORE_END) core=endMin-GRACE_END;
+      else core=CORE_END-GRACE_END;
+      if(core<0) core=0;
+
+      const ot = Math.max(0, endMin - CORE_END);
+
+      const otBase = (ot/60)*baseRate;
+      const otLegacy = (ot/60)*legacyRate;
+
+      document.getElementById('allHours').textContent = fmtHours(totalWorked);
+      document.getElementById('graceHours').textContent = fmtHours(grace);
+      document.getElementById('coreHours').textContent = fmtHours(core);
+      document.getElementById('otHours').textContent = fmtHours(ot);
+      document.getElementById('otBase').textContent = fmtMoney(otBase);
+      document.getElementById('otLegacy').textContent = fmtMoney(otLegacy);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      ensureDates();
+      window.addEventListener('load', () => { try { initAuth(); } catch(e) {} });
+      document.getElementById('signin').addEventListener('click', signIn);
+      document.getElementById('fetchEvents').addEventListener('click', fetchEvents);
+      document.getElementById('useSel').addEventListener('click', () => {
+        const pick = document.getElementById('eventPick');
+        const jobRef = document.getElementById('jobRef');
+        if (pick.value) jobRef.value = pick.value;
+      });
+      document.querySelectorAll('.chip[data-time]').forEach(el => {
+        el.addEventListener('click', () => {
+          const rt = document.getElementById('returnTimeTxt');
+          rt.value = el.getAttribute('data-time');
+          calc();
+        });
+      });
+      document.getElementById('nowBtn').addEventListener('click', () => {
+        const rt = document.getElementById('returnTimeTxt');
+        rt.value = (function(){ const d=new Date(); const h=String(d.getHours()).padStart(2,'0'); const m=String(Math.round(d.getMinutes()/5)*5).padStart(2,'0'); return h+':'+m; })();
+        calc();
+      });
+      document.getElementById('calcBtn').addEventListener('click', calc);
+      document.getElementById('returnTimeTxt').addEventListener('keydown', e => { if (e.key==='Enter') calc(); });
+    });
+  </script>
+</body>
+</html>
