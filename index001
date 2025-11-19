@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Frazer's AVD TOOLS</title>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{--bg:#0f172a;--card:#0b1220;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--border:#1f2937}
+    @media (prefers-color-scheme: light){
+      :root{--bg:#f8fafc;--card:#ffffff;--text:#0f172a;--muted:#475569;--accent:#0ea5e9;--border:#e5e7eb}
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:radial-gradient(1200px 800px at 10% 10%,rgba(56,189,248,.08),transparent 40%),
+                 radial-gradient(1000px 700px at 90% 20%,rgba(99,102,241,.08),transparent 45%),var(--bg);
+      color:var(--text);display:flex;align-items:center;justify-content:center;padding:24px;
+    }
+    .shell{width:100%;max-width:960px;background:color-mix(in oklab,var(--card) 94%,transparent);
+      border:1px solid var(--border);border-radius:20px;padding:28px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{margin:0;font-size:28px;letter-spacing:.2px}
+    .subtitle{color:var(--muted);margin:6px 0 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:20px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+    .card h3{margin:0;font-size:18px}
+    .card p{margin:0;color:var(--muted);font-size:14px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:12px 14px;border-radius:12px;border:1px solid color-mix(in oklab,var(--accent) 60%,var(--border));
+      color:var(--text);background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 30%,transparent),transparent);
+      text-decoration:none;font-weight:600;transition:transform .06s ease,background .2s ease}
+    .btn:hover{transform:translateY(-1px)}
+    .btn.secondary{background:transparent}
+    .pill{display:inline-block;padding:2px 10px;font-size:12px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
+    footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center}
+    code{background:rgba(148,163,184,.15);padding:.15em .35em;border-radius:6px}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>Frazer's AVD TOOLS</h1>
+        <p class="subtitle">Quick links to your internal calculators & utilities.</p>
+      </div>
+      <span class="pill">GitHub Pages</span>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h3>Overtime Calculator</h3>
+        <p>Daily time calc with Google Calendar event picker, log, and export to Word/PDF.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:2px">
+          <!-- Project Pages link (keeps your current OAuth/Calendar setup intact) -->
+          <a class="btn" href="/Overtime-Calculator/" target="_self" rel="noopener">Open</a>
+          <a class="btn secondary" href="/Overtime-Calculator/" target="_blank" rel="noopener">Open in new tab</a>
+        </div>
+      </article>
+
+      <!-- Placeholder for future tools -->
+      <article class="card">
+        <h3>Coming soon</h3>
+        <p>Slot for your next tool (quote helper, hire kit checker, etc.).</p>
+        <div><a class="btn secondary" href="#" onclick="alert('Not added yet');return false;">Preview</a></div>
+      </article>
+    </section>
+
+    <footer>
+      Add more projects by creating new repos and enabling Pages → they’ll appear at
+      <code>https://frazerboorman.github.io/&lt;repo-name&gt;/</code>.
+    </footer>
+  </main>
+</body>
+</html>
