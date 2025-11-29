@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AVD OT Calculator – Stable + Calendar (Auto-Fetch, v4.1)</title>
+  <title>AVD OT Calculator – Stable + Calendar (Auto-Fetch, v4.2)</title>
   <meta name="color-scheme" content="light dark" />
   <meta name="google-oauth-client-id"
         content="105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com" />
@@ -245,7 +245,8 @@
     /* Debug & API & Calendar settings panels */
     details.debug,
     details.api,
-    details.calendar-settings {
+    details.calendar-settings,
+    details.calendar-range {
       margin-top:10px;
       border-radius:12px;
       border:1px dashed var(--border);
@@ -256,12 +257,14 @@
     @media (prefers-color-scheme: light) {
       details.debug,
       details.api,
-      details.calendar-settings { background:#f3f4f6; }
+      details.calendar-settings,
+      details.calendar-range { background:#f3f4f6; }
     }
 
     details.debug summary,
     details.api summary,
-    details.calendar-settings summary {
+    details.calendar-settings summary,
+    details.calendar-range summary {
       cursor:pointer;
       font-size:12px;
       color:var(--muted);
@@ -274,6 +277,31 @@
     }
 
     .danger-text { color:var(--danger); }
+
+    .flag-row {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:8px;
+      font-size:12px;
+    }
+    .flag-row label {
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-weight:500;
+      margin-bottom:0;
+    }
+    .flag-row input[type="checkbox"] {
+      width:auto;
+      accent-color:var(--accent);
+    }
+
+    .day-type-label {
+      margin-top:8px;
+      font-size:12px;
+      color:var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -284,11 +312,13 @@
         <div>
           <h1>
             AVD Overtime Calculator
-            <span class="version">v4.1</span>
+            <span class="version">v4.2</span>
           </h1>
           <div class="muted">
-            Daily calculator: leave fixed at <strong>07:45</strong>. 07:45–09:00 = grace/unpaid travel.
-            After <strong>17:00</strong> is overtime. Uses Google Calendar to help pick jobs and dates.
+            Daily calculator: leave defaults to <strong>07:45</strong> (adjustable below).
+            Time before <strong>09:00</strong> and after <strong>17:00</strong> counts as overtime,
+            with a <strong>15 minute</strong> deduction each side on field days.
+            Full office/admin and office-finish days can be flagged to adjust overtime.
           </div>
         </div>
         <a href="https://frazerboorman.github.io/" class="pill">Frazer · AVD TOOLS</a>
@@ -298,14 +328,6 @@
       <div class="section">
         <div class="section-title">Step 1 – Load events from Google Calendar</div>
         <div class="grid">
-          <div>
-            <label for="fromDate">From</label>
-            <input id="fromDate" type="date" />
-          </div>
-          <div>
-            <label for="toDate">To</label>
-            <input id="toDate" type="date" />
-          </div>
           <div style="align-self:end;">
             <div class="btnrow">
               <button id="signin" class="primary" type="button">Sign in to Google</button>
@@ -317,7 +339,7 @@
 
         <div class="grid" style="margin-top:12px;">
           <div>
-            <label for="eventPick">Recent events</label>
+            <label for="eventPick">Recent events (newest first)</label>
             <select id="eventPick">
               <option value="">— Select recent event (optional) —</option>
             </select>
@@ -327,6 +349,24 @@
             <div class="note">Picking an event auto-fills the Date and Job fields.</div>
           </div>
         </div>
+
+        <!-- Advanced calendar date range -->
+        <details class="calendar-range">
+          <summary>Advanced: calendar date range (defaults to last 7 days including today)</summary>
+          <div class="grid" style="margin-top:8px;">
+            <div>
+              <label for="fromDate">From</label>
+              <input id="fromDate" type="date" />
+            </div>
+            <div>
+              <label for="toDate">To</label>
+              <input id="toDate" type="date" />
+            </div>
+          </div>
+          <div class="small-note" style="margin-top:6px;">
+            These dates control which events are shown in the dropdown above.
+          </div>
+        </details>
       </div>
 
       <!-- STEP 2 – Daily inputs -->
@@ -342,6 +382,11 @@
             <input id="date" type="date" />
           </div>
           <div>
+            <label for="leaveTime">Leave home time</label>
+            <input id="leaveTime" type="time" step="300" />
+            <div class="note">Defaults to 07:45 if left blank.</div>
+          </div>
+          <div>
             <label for="returnTime">Return home time</label>
             <input id="returnTime" type="time" step="300" />
             <div class="note">Uses your device’s time setting (24-hour if enabled).</div>
@@ -350,6 +395,17 @@
             <label for="baseRate">Base hourly rate (£)</label>
             <input id="baseRate" inputmode="decimal" value="15.70" />
           </div>
+        </div>
+
+        <div class="flag-row">
+          <label>
+            <input type="checkbox" id="fullOfficeDay" />
+            Full office/admin day (no overtime at all)
+          </label>
+          <label>
+            <input type="checkbox" id="officeFinishDay" />
+            Returned to office by ~16:00 and worked there until 17:00 (no overtime after 17:00)
+          </label>
         </div>
 
         <div class="btnrow">
@@ -363,11 +419,11 @@
         <div class="section-title">Step 3 – Results</div>
         <div class="kpi">
           <div>
-            <div class="muted">Total worked (07:45 → return)</div>
+            <div class="muted">Total worked (leave → end of work)</div>
             <div class="big" id="allHours">—</div>
           </div>
           <div>
-            <div class="muted">Grace window (unpaid)</div>
+            <div class="muted">Pre-09:00 overtime (after 15m deduction)</div>
             <div class="big" id="graceHours">—</div>
           </div>
           <div>
@@ -375,14 +431,15 @@
             <div class="big" id="coreHours">—</div>
           </div>
           <div>
-            <div class="muted">Overtime hours (>17:00)</div>
+            <div class="muted">Post-17:00 overtime (after 15m deduction)</div>
             <div class="big" id="otHours">—</div>
           </div>
           <div>
-            <div class="muted">OT owed @ base rate</div>
+            <div class="muted">Total OT owed @ base rate</div>
             <div class="big" id="otBase">—</div>
           </div>
         </div>
+        <div id="dayTypeLabel" class="day-type-label">Day type: —</div>
       </div>
 
       <!-- STEP 4 – Log & export -->
@@ -398,9 +455,9 @@
                 <th>Return time</th>
                 <th>Job / Location</th>
                 <th>Total worked</th>
-                <th>Grace</th>
+                <th>Pre-09 OT</th>
                 <th>Core</th>
-                <th>Overtime</th>
+                <th>Post-17 OT</th>
                 <th>OT @ base</th>
               </tr>
             </thead>
@@ -467,10 +524,9 @@
     let accessToken = null;
     let tokenClient = null;
 
-    const STORAGE_KEY = "avd_ot_stable_calendar_autofetch_v4";
+    const STORAGE_KEY = "avd_ot_stable_calendar_autofetch_v4"; // keep same key for now
     const OPENAI_KEY_STORAGE = "avd_job_report_openai_key";
 
-    const LEAVE_MIN = 7*60 + 45; // 07:45
     const GRACE_END = 9*60;      // 09:00
     const CORE_END  = 17*60;     // 17:00
 
@@ -546,9 +602,13 @@
       if (!accessToken) { setStatus("Sign in first", false); return; }
 
       const calId = (document.getElementById("calendarId").value || "primary").trim();
+
       const fromStr = document.getElementById("fromDate").value.trim();
       const toStr = document.getElementById("toDate").value.trim();
-      if (!fromStr || !toStr) { setStatus("Enter a date range", false); return; }
+      if (!fromStr || !toStr) {
+        setStatus("No date range set", false);
+        return;
+      }
 
       const { timeMin, timeMax } = spanISO(fromStr, toStr);
 
@@ -571,7 +631,18 @@
 
       const sel = document.getElementById("eventPick");
       sel.innerHTML = '<option value="">— Select recent event (optional) —</option>';
-      (data.items || []).forEach(ev => {
+
+      // Sort events so most recent start time is first
+      const items = (data.items || []).slice().sort((a, b) => {
+        const aStart = a.start ? (a.start.dateTime || a.start.date) : null;
+        const bStart = b.start ? (b.start.dateTime || b.start.date) : null;
+        if (!aStart && !bStart) return 0;
+        if (!aStart) return 1;
+        if (!bStart) return -1;
+        return new Date(bStart) - new Date(aStart);
+      });
+
+      items.forEach(ev => {
         const title = ev.summary || "(no title)";
         let dateStr = "";
         if (ev.start) {
@@ -584,8 +655,8 @@
         if (dateStr) opt.dataset.date = dateStr;
         sel.appendChild(opt);
       });
-      setStatus("Loaded " + ((data.items || []).length) + " events", true);
-      logDebug("fetchEvents: loaded " + ((data.items || []).length) + " events.");
+      setStatus("Loaded " + items.length + " events", true);
+      logDebug("fetchEvents: loaded " + items.length + " events.");
     }
 
     function autoFetch() {
@@ -603,9 +674,9 @@
         returnTime: r.children[2].textContent.trim(),
         job: r.children[3].textContent.trim(),
         total: r.children[4].textContent.trim(),
-        grace: r.children[5].textContent.trim(),
+        pre9: r.children[5].textContent.trim(),
         core: r.children[6].textContent.trim(),
-        ot: r.children[7].textContent.trim(),
+        post17: r.children[7].textContent.trim(),
         otBase: r.children[8].textContent.trim()
       }));
     }
@@ -652,6 +723,11 @@
       const fmt = d => d.toISOString().slice(0,10);
       if (!document.getElementById("date").value) document.getElementById("date").value = fmt(now);
 
+      const leave = document.getElementById("leaveTime");
+      if (!leave.value) {
+        leave.value = "07:45";
+      }
+
       const rt = document.getElementById("returnTime");
       if (!rt.value) {
         const hh = String(now.getHours()).padStart(2,"0");
@@ -659,9 +735,10 @@
         rt.value = hh + ":" + mm;
       }
 
+      // Default to last 7 days including today
       const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
       const start = new Date(end);
-      start.setDate(start.getDate() - 6);
+      start.setDate(start.getDate() - 6); // 7 days window including today
       start.setHours(0,0,0,0);
 
       if (!document.getElementById("fromDate").value) document.getElementById("fromDate").value = fmt(start);
@@ -676,7 +753,10 @@
     // ========= CALCULATION =========
     function minutesFromHHMM(v) {
       if (!v) return null;
-      const [hh, mm] = v.split(":").map(Number);
+      const parts = v.split(":");
+      if (parts.length !== 2) return null;
+      const hh = Number(parts[0]);
+      const mm = Number(parts[1]);
       if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
       return hh*60 + mm;
     }
@@ -693,6 +773,20 @@
       return "£" + pounds.toFixed(2);
     }
 
+    function updateDayTypeLabel(fullOfficeDay, officeFinishDay) {
+      const el = document.getElementById("dayTypeLabel");
+      if (!el) return;
+      let text = "Day type: ";
+      if (fullOfficeDay) {
+        text += "Full office/admin day";
+      } else if (officeFinishDay) {
+        text += "Office-finish day";
+      } else {
+        text += "Field day";
+      }
+      el.textContent = text;
+    }
+
     function calc() {
       logDebug("calc: running.");
       const pick = document.getElementById("eventPick");
@@ -704,31 +798,94 @@
         }
       }
 
+      const leaveVal = document.getElementById("leaveTime").value || "07:45";
+      let leaveMin = minutesFromHHMM(leaveVal);
+      if (leaveMin == null) {
+        alert("Enter a valid leave time (HH:MM).");
+        return;
+      }
+
       const rtVal = document.getElementById("returnTime").value;
       const baseRate = parseFloat(
         (document.getElementById("baseRate").value || "15.70").replace(",",".")
       );
       let endMin = minutesFromHHMM(rtVal);
       if (endMin == null) { alert("Select a valid return time."); return; }
-      if (endMin < LEAVE_MIN) endMin += 24*60;
 
-      const totalWorked = Math.max(0, endMin - LEAVE_MIN);
-      const grace = Math.max(0, Math.min(endMin, GRACE_END) - LEAVE_MIN);
+      // handle cross-midnight
+      if (endMin < leaveMin) endMin += 24*60;
 
+      const fullOfficeDay = document.getElementById("fullOfficeDay").checked;
+      const officeFinishDay = !fullOfficeDay && document.getElementById("officeFinishDay").checked;
+
+      // Effective end-of-work for overtime purposes:
+      // - office-finish day: cap at 17:00
+      // - otherwise: actual return time
+      let effectiveEnd = endMin;
+      if (officeFinishDay) {
+        effectiveEnd = Math.min(endMin, CORE_END);
+      }
+
+      // Basic spans using effective end
+      const totalWorked = Math.max(0, effectiveEnd - leaveMin);
+
+      // Pre-09 span (raw)
+      let pre9Span = 0;
+      if (effectiveEnd > leaveMin && leaveMin < GRACE_END) {
+        pre9Span = Math.max(0, Math.min(effectiveEnd, GRACE_END) - leaveMin);
+      }
+
+      // Core 09–17 span
       let core = 0;
-      if (endMin <= GRACE_END) core = 0;
-      else if (endMin < CORE_END) core = endMin - GRACE_END;
-      else core = CORE_END - GRACE_END;
-      if (core < 0) core = 0;
+      if (effectiveEnd > GRACE_END) {
+        const coreStart = Math.max(leaveMin, GRACE_END);
+        const coreEnd = Math.min(effectiveEnd, CORE_END);
+        core = Math.max(0, coreEnd - coreStart);
+      }
 
-      const ot = Math.max(0, endMin - CORE_END);
-      const otBase = (ot/60)*baseRate;
+      // Post-17 span (raw)
+      let post17Span = 0;
+      if (!officeFinishDay && effectiveEnd > CORE_END) {
+        post17Span = Math.max(0, effectiveEnd - CORE_END);
+      }
+
+      // Apply overtime rules
+      let pre9OT = pre9Span;
+      let post17OT = post17Span;
+
+      if (fullOfficeDay) {
+        pre9OT = 0;
+        post17OT = 0;
+      } else if (officeFinishDay) {
+        // Pre-9 still counts with 15min deduction, no OT after 17:00
+        pre9OT = Math.max(0, pre9Span - 15);
+        post17OT = 0;
+      } else {
+        // Normal field day: 15min compromise both sides
+        if (pre9OT > 0) pre9OT = Math.max(0, pre9OT - 15);
+        if (post17OT > 0) post17OT = Math.max(0, post17OT - 15);
+      }
+
+      const totalOT = pre9OT + post17OT;
+      const otBase = (totalOT/60)*baseRate;
 
       document.getElementById("allHours").textContent = fmtHours(totalWorked);
-      document.getElementById("graceHours").textContent = fmtHours(grace);
+      document.getElementById("graceHours").textContent = fmtHours(pre9OT);
       document.getElementById("coreHours").textContent = fmtHours(core);
-      document.getElementById("otHours").textContent = fmtHours(ot);
+      document.getElementById("otHours").textContent = fmtHours(post17OT);
       document.getElementById("otBase").textContent = fmtMoney(otBase);
+
+      updateDayTypeLabel(fullOfficeDay, officeFinishDay);
+
+      logDebug(
+        "calc spans: leave=" + leaveMin +
+        " total=" + totalWorked +
+        " pre9Span=" + pre9Span + " pre9OT=" + pre9OT +
+        " core=" + core +
+        " post17Span=" + post17Span + " post17OT=" + post17OT +
+        " fullOfficeDay=" + fullOfficeDay +
+        " officeFinishDay=" + officeFinishDay
+      );
     }
 
     // ========= LOG HANDLING =========
@@ -777,7 +934,7 @@
       tdAct.appendChild(del);
       tr.appendChild(tdAct);
 
-      [item.date, item.returnTime, item.job, item.total, item.grace, item.core, item.ot, item.otBase]
+      [item.date, item.returnTime, item.job, item.total, item.pre9, item.core, item.post17, item.otBase]
         .forEach(txt => {
           const td = document.createElement("td");
           td.textContent = txt || "";
@@ -799,9 +956,9 @@
         returnTime: document.getElementById("returnTime").value || "",
         job: document.getElementById("jobRef").value || "",
         total: document.getElementById("allHours").textContent || "",
-        grace: document.getElementById("graceHours").textContent || "",
+        pre9: document.getElementById("graceHours").textContent || "",
         core: document.getElementById("coreHours").textContent || "",
-        ot: document.getElementById("otHours").textContent || "",
+        post17: document.getElementById("otHours").textContent || "",
         otBase: document.getElementById("otBase").textContent || ""
       };
 
@@ -843,25 +1000,25 @@
 
     function buildDocHtmlFromLog() {
       const colWidths = ["12%","10%","34%","11%","8%","8%","9%","8%"];
-      const headCells = ["Date","Return time","Job / Location","Total worked","Grace","Core","Overtime","OT @ base"];
+      const headCells = ["Date","Return time","Job / Location","Total worked","Pre-09 OT","Core","Post-17 OT","OT @ base"];
 
       const rows = Array.from(document.querySelectorAll("#logBody tr")).filter(r => !r.id);
-      let totTotal=0, totGrace=0, totCore=0, totOT=0, totMoney=0;
+      let totTotal=0, totPre9=0, totCore=0, totPost17=0, totMoney=0;
 
       const bodyRowsHtml = rows.map(r => {
         const date = r.children[1].textContent.trim();
         const rt   = r.children[2].textContent.trim();
         const job  = r.children[3].textContent.trim();
         const total= r.children[4].textContent.trim();
-        const grace= r.children[5].textContent.trim();
+        const pre9 = r.children[5].textContent.trim();
         const core = r.children[6].textContent.trim();
-        const ot   = r.children[7].textContent.trim();
+        const post = r.children[7].textContent.trim();
         const base = r.children[8].textContent.trim();
 
         totTotal += parseHM(total);
-        totGrace += parseHM(grace);
+        totPre9  += parseHM(pre9);
         totCore  += parseHM(core);
-        totOT    += parseHM(ot);
+        totPost17+= parseHM(post);
         totMoney += parseMoney(base);
 
         return "<tr>" +
@@ -869,9 +1026,9 @@
           "<td>" + rt + "</td>" +
           "<td>" + job + "</td>" +
           "<td class=\"tc\">" + total + "</td>" +
-          "<td class=\"tc\">" + grace + "</td>" +
+          "<td class=\"tc\">" + pre9 + "</td>" +
           "<td class=\"tc\">" + core + "</td>" +
-          "<td class=\"tc\">" + ot + "</td>" +
+          "<td class=\"tc\">" + post + "</td>" +
           "<td class=\"tr\">" + base + "</td>" +
         "</tr>";
       }).join("");
@@ -882,9 +1039,9 @@
             "<td></td>" +
             "<td><b>Totals</b></td>" +
             "<td class=\"tc\"><b>" + fmtHM(totTotal) + "</b></td>" +
-            "<td class=\"tc\"><b>" + fmtHM(totGrace) + "</b></td>" +
+            "<td class=\"tc\"><b>" + fmtHM(totPre9) + "</b></td>" +
             "<td class=\"tc\"><b>" + fmtHM(totCore) + "</b></td>" +
-            "<td class=\"tc\"><b>" + fmtHM(totOT) + "</b></td>" +
+            "<td class=\"tc\"><b>" + fmtHM(totPost17) + "</b></td>" +
             "<td class=\"tr\"><b>£" + totMoney.toFixed(2) + "</b></td>" +
           "</tr>"
         : "";
@@ -918,11 +1075,13 @@
       const explain = "<div class=\"explain\">" +
         "<p><b>How the calculations work</b></p>" +
         "<ul style=\"margin:0 0 6pt 18pt;padding:0\">" +
-          "<li>Leave fixed at 07:45</li>" +
-          "<li>07:45–09:00 grace/unpaid</li>" +
-          "<li>09:00–17:00 core paid</li>" +
-          "<li>After 17:00 overtime</li>" +
-          "<li>OT shown at base rate (£15.70/hr)</li>" +
+          "<li>Leave time defaults to 07:45 but can be adjusted for each day.</li>" +
+          "<li>Time before 09:00 and after 17:00 counts as overtime, based on your recorded leave and return times.</li>" +
+          "<li>On field days, 15 minutes is deducted from pre-09:00 overtime and 15 minutes from post-17:00 overtime.</li>" +
+          "<li>On office-finish days, pre-09:00 overtime (after a 15 minute deduction) is kept, but there is no overtime after 17:00.</li>" +
+          "<li>Full office/admin days can be flagged so that no overtime is counted.</li>" +
+          "<li>Core paid hours are 09:00–17:00.</li>" +
+          "<li>Overtime is shown at the base rate (e.g. £15.70/hr).</li>" +
         "</ul>" +
       "</div>";
 
@@ -1072,6 +1231,7 @@
       }
 
       updateLogCount();
+      updateDayTypeLabel(false, false);
     });
   </script>
 </body>
