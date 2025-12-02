@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AVD OT Calculator – Stable + Calendar (Auto-Fetch, v4.3)</title>
+  <title>AVD OT Calculator – Stable + Calendar (Auto-Fetch, v4.4)</title>
   <meta name="color-scheme" content="light dark" />
   <meta name="google-oauth-client-id"
         content="105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com" />
@@ -263,6 +263,10 @@
       details.calendar-day-select { background:#f3f4f6; }
     }
 
+    details.calendar-range {
+      display:none; /* HIDDEN as you requested */
+    }
+
     details.debug summary,
     details.api summary,
     details.calendar-settings summary,
@@ -307,6 +311,8 @@
     }
   </style>
 </head>
+
+
 <body>
   <div class="wrap">
     <div class="card">
@@ -315,7 +321,7 @@
         <div>
           <h1>
             AVD Overtime Calculator
-            <span class="version">v4.3</span>
+            <span class="version">v4.4</span>
           </h1>
           <div class="muted">
             Daily calculator: leave defaults to <strong>07:45</strong> (adjustable below).
@@ -353,7 +359,7 @@
           </div>
         </div>
 
-        <!-- Advanced calendar date range -->
+        <!-- Advanced calendar date range — now hidden -->
         <details class="calendar-range">
           <summary>Advanced: calendar date range (defaults to last 7 days including today)</summary>
           <div class="grid" style="margin-top:8px;">
@@ -365,22 +371,6 @@
               <label for="toDate">To</label>
               <input id="toDate" type="date" />
             </div>
-          </div>
-          <div class="small-note" style="margin-top:6px;">
-            These dates reflect the current 7-day window used for the events above.
-          </div>
-        </details>
-
-        <!-- Hidden: single-day selector -->
-        <details class="calendar-day-select">
-          <summary>Hidden: load events for a specific day</summary>
-          <div style="margin-top:8px;max-width:260px;">
-            <label for="singleDay">Day</label>
-            <input id="singleDay" type="date" />
-            <div class="small-note">
-              Loads only events from this single day into the dropdown above.
-            </div>
-            <button id="fetchSingleDay" type="button" style="margin-top:8px;">Load this day only</button>
           </div>
         </details>
       </div>
@@ -398,14 +388,13 @@
             <input id="date" type="date" />
           </div>
           <div>
-            <label for="leaveTime">Leave home time</label>
+            <label for="leaveTime">Time left</label>
             <input id="leaveTime" type="time" step="300" />
             <div class="note">Defaults to 07:45 if left blank.</div>
           </div>
           <div>
-            <label for="returnTime">Return home time</label>
+            <label for="returnTime">Time returned</label>
             <input id="returnTime" type="time" step="300" />
-            <div class="note">Uses your device’s time setting (24-hour if enabled).</div>
           </div>
           <div>
             <label for="baseRate">Base hourly rate (£)</label>
@@ -416,11 +405,11 @@
         <div class="flag-row">
           <label>
             <input type="checkbox" id="fullOfficeDay" />
-            Full office/admin day (no overtime at all)
+            Full office/admin day (no overtime)
           </label>
           <label>
             <input type="checkbox" id="officeFinishDay" />
-            Returned to office by ~16:00 and worked there until 17:00 (no overtime after 17:00)
+            Returned to office by ~16:00 (no overtime after 17:00)
           </label>
         </div>
 
@@ -435,23 +424,23 @@
         <div class="section-title">Step 3 – Results</div>
         <div class="kpi">
           <div>
-            <div class="muted">Total worked (leave → end of work)</div>
+            <div class="muted">Total worked (raw)</div>
             <div class="big" id="allHours">—</div>
           </div>
           <div>
-            <div class="muted">Pre-09:00 overtime (after 15m deduction)</div>
+            <div class="muted">Pre-09:00 OT (after 15m deduction)</div>
             <div class="big" id="graceHours">—</div>
           </div>
           <div>
-            <div class="muted">Core paid hours (09:00–17:00)</div>
+            <div class="muted">Core hours</div>
             <div class="big" id="coreHours">—</div>
           </div>
           <div>
-            <div class="muted">Post-17:00 overtime (after 15m deduction)</div>
+            <div class="muted">Post-17:00 OT (after 15m deduction)</div>
             <div class="big" id="otHours">—</div>
           </div>
           <div>
-            <div class="muted">Total OT owed @ base rate</div>
+            <div class="muted">OT Due @ base rate</div>
             <div class="big" id="otBase">—</div>
           </div>
         </div>
@@ -462,36 +451,38 @@
       <div class="section">
         <div class="section-title">Step 4 – Log & export</div>
         <h2 id="logHeader">LOG <span id="logCount" class="badge">0 entries</span></h2>
+
         <div id="logBox" class="logbox">
           <table id="logTable">
             <thead>
               <tr>
                 <th style="width:120px;">Actions</th>
                 <th>Date</th>
-                <th>Return time</th>
                 <th>Job / Location</th>
+                <th>Time left</th>
+                <th>Time returned</th>
                 <th>Total worked</th>
-                <th>Pre-09 OT</th>
-                <th>Core</th>
-                <th>Post-17 OT</th>
-                <th>OT @ base</th>
+                <th>Total overtime</th>
+                <th>OT Due</th>
               </tr>
             </thead>
+
             <tbody id="logBody">
               <tr id="placeholderRow">
-                <td colspan="9" class="note">No entries yet — add one above.</td>
+                <td colspan="8" class="note">No entries yet — add one above.</td>
               </tr>
             </tbody>
           </table>
+
           <div class="btnrow">
-            <button id="exportDoc" class="primary" type="button">Export to Word (.docx)</button>
-            <button id="exportPdf" type="button">Export to PDF</button>
+            <button id="exportDoc" class="primary" type="button">Export Word (.docx)</button>
+            <button id="exportPdf" type="button">Export PDF</button>
             <button id="clearLog" class="danger" type="button">Clear table</button>
           </div>
         </div>
 
         <p class="note" style="margin-top:12px;">
-          Authorisation is captured on the exported document only.
+          Authorisation signature appears on exported documents only.
         </p>
       </div>
     </div>
@@ -502,31 +493,25 @@
       <pre id="debugLog">(empty)</pre>
     </details>
 
-    <!-- Calendar settings (Calendar ID hidden by default) -->
+    <!-- Calendar settings -->
     <details class="calendar-settings">
       <summary>Calendar settings (Calendar ID)</summary>
-      <div class="small-note" style="margin-top:4px;">
-        Advanced: change which Google Calendar this tool reads from. Usually leave as-is.
-      </div>
-      <div style="margin-top:6px;max-width:460px;">
+      <div class="small-note">Normally leave this unchanged.</div>
+      <div style="max-width:460px;margin-top:6px;">
         <label for="calendarId">Calendar ID</label>
         <input id="calendarId"
                value="bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com" />
-        <div class="small-note">
-          Same shared calendar you use in the other AVD tools.
-        </div>
       </div>
     </details>
 
-    <!-- API KEY PANEL (OpenAI – shared with other tools) -->
+    <!-- API KEY PANEL -->
     <details class="api">
-      <summary>API key (OpenAI) – hidden by default</summary>
+      <summary>API key (OpenAI)</summary>
       <div class="small-note" style="margin-top:4px;">
-        Stored locally in <code>localStorage['avd_job_report_openai_key']</code>. Not sent anywhere except OpenAI’s API.
-        This overtime tool doesn’t call OpenAI yet, but shares the same key as the other tools.
+        Stored locally in <code>localStorage['avd_job_report_openai_key']</code>.
       </div>
-      <div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap;">
-        <input id="apiKeyInput" type="password" placeholder="sk-..." style="flex:1 1 220px;max-width:380px;" />
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+        <input id="apiKeyInput" type="password" placeholder="sk-…" style="flex:1 1 220px;max-width:380px;" />
         <button type="button" id="saveApiKeyBtn">Save</button>
         <button type="button" id="clearApiKeyBtn">Forget</button>
       </div>
@@ -534,148 +519,555 @@
     </details>
   </div>
 
-  <script>
-    const CLIENT_ID = "105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com";
-    const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
-    let accessToken = null;
-    let tokenClient = null;
+<script>
+/* ---------- CONSTANTS ---------- */
+const CLIENT_ID = "105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com";
+const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
 
-    const STORAGE_KEY = "avd_ot_stable_calendar_autofetch_v4"; // keep same key for now
-    const OPENAI_KEY_STORAGE = "avd_job_report_openai_key";
+let accessToken = null;
+let tokenClient = null;
 
-    const GRACE_END = 9*60;      // 09:00
-    const CORE_END  = 17*60;     // 17:00
+const STORAGE_KEY = "avd_ot_stable_calendar_autofetch_v4_4";
+const OPENAI_KEY_STORAGE = "avd_job_report_openai_key";
 
-    // ========== Calendar & Fetch Logic ==========
-    function initAuth() {
-      if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
-        logDebug("initAuth: Google auth library not ready yet.");
-        return;
+const GRACE_END = 9*60;
+const CORE_END = 17*60;
+
+/* ---------- DEBUG ---------- */
+function logDebug(msg) {
+  const el = document.getElementById("debugLog");
+  if (!el) return;
+  const ts = new Date().toISOString().replace("T"," ").slice(0,19);
+  el.textContent += `[${ts}] ${msg}\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(msg, ok) {
+  const el = document.getElementById("authStatus");
+  if (!el) return;
+  el.textContent = "Status: " + msg;
+  el.className = "note";
+  logDebug("AUTH: " + msg);
+}
+
+/* ---------- CALENDAR AUTH ---------- */
+function initAuth() {
+  if (!window.google?.accounts?.oauth2) {
+    logDebug("Google auth library not ready.");
+    return;
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    prompt: "",
+    callback: (resp) => {
+      if (resp?.access_token) {
+        accessToken = resp.access_token;
+        setStatus("Signed in", true);
+        fetchEvents();
+      } else {
+        setStatus("Sign-in failed", false);
       }
-      tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        prompt: "",
-        callback: (resp) => {
-          if (resp && resp.access_token) {
-            accessToken = resp.access_token;
-            setStatus("Signed in", true);
-            autoFetch();
-          } else {
-            setStatus("Sign-in failed", false);
-          }
-        }
-      });
-      logDebug("initAuth: tokenClient initialised.");
     }
+  });
+}
 
-    async function signIn() {
-      logDebug("signIn: clicked.");
-      if (!tokenClient) initAuth();
-      if (!tokenClient) {
-        setStatus("Auth library not ready. Try again.", false);
-        return;
+function signIn() {
+  if (!tokenClient) initAuth();
+  if (!tokenClient) return setStatus("Auth not ready", false);
+  tokenClient.requestAccessToken();
+}
+
+function timeRangeISO(d) {
+  const [y,m,dd] = d.split("-").map(Number);
+  const start = new Date(Date.UTC(y,m-1,dd,0,0,0));
+  const end   = new Date(Date.UTC(y,m-1,dd,23,59,59));
+  return { timeMin:start.toISOString(), timeMax:end.toISOString() };
+}
+
+function spanISO(from,to) {
+  return {
+    timeMin: timeRangeISO(from).timeMin,
+    timeMax: timeRangeISO(to).timeMax
+  };
+}
+
+async function fetchEvents() {
+  if (!accessToken) return setStatus("Sign in first", false);
+
+  const calId = document.getElementById("calendarId").value.trim();
+
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(),23,59,59);
+  const start = new Date(end);
+  start.setDate(start.getDate()-6);
+  start.setHours(0,0,0,0);
+
+  const fmt = d => d.toISOString().slice(0,10);
+  const fromStr = fmt(start);
+  const toStr   = fmt(end);
+
+  document.getElementById("fromDate").value = fromStr;
+  document.getElementById("toDate").value   = toStr;
+
+  const {timeMin,timeMax} = spanISO(fromStr,toStr);
+
+  const url = new URL("https://www.googleapis.com/calendar/v3/calendars/" +
+    encodeURIComponent(calId) + "/events");
+  url.searchParams.set("singleEvents","true");
+  url.searchParams.set("orderBy","startTime");
+  url.searchParams.set("timeMin",timeMin);
+  url.searchParams.set("timeMax",timeMax);
+  url.searchParams.set("maxResults","2500");
+
+  logDebug("fetch: "+url);
+
+  const res = await fetch(url,{headers:{Authorization:"Bearer "+accessToken}});
+  if (!res.ok) return setStatus("API error "+res.status, false);
+  const data = await res.json();
+
+  const sel = document.getElementById("eventPick");
+  sel.innerHTML = '<option value="">— Select recent event (optional) —</option>';
+
+  const items = (data.items||[]).slice().sort((a,b)=>{
+    const aa = a.start?.dateTime || a.start?.date;
+    const bb = b.start?.dateTime || b.start?.date;
+    return new Date(bb) - new Date(aa);
+  });
+
+  items.forEach(ev=>{
+    const title = ev.summary || "(no title)";
+    const date = ev.start.date || ev.start.dateTime?.slice(0,10) || "";
+    const opt = document.createElement("option");
+    opt.value = title;
+    opt.textContent = `${title} — ${date}`;
+    opt.dataset.date = date;
+    sel.appendChild(opt);
+  });
+
+  setStatus("Loaded "+items.length+" events", true);
+}
+
+/* ---------- DATE FORMAT CONVERSION ---------- */
+function toDMY(iso) {
+  if (!iso) return "";
+  const [y,m,d] = iso.split("-");
+  return `${d}-${m}-${y}`;
+}
+
+/* ---------- CALCULATION ---------- */
+function minutesFromHHMM(v) {
+  if (!v) return null;
+  const [hh,mm] = v.split(":").map(Number);
+  return hh*60 + mm;
+}
+
+function fmtHours(mins) {
+  if (mins==null || isNaN(mins)) return "—";
+  const h = Math.floor(mins/60);
+  const m = mins%60;
+  return `${h}h ${String(m).padStart(2,"0")}m`;
+}
+
+function fmtMoney(p) {
+  if (p==null || isNaN(p)) return "—";
+  return "£"+p.toFixed(2);
+}
+
+function updateDayTypeLabel(full,finish) {
+  const el = document.getElementById("dayTypeLabel");
+  if (!full && !finish) el.textContent = "Day type: Field day";
+  else if (full) el.textContent = "Day type: Full office/admin day";
+  else el.textContent = "Day type: Office-finish day";
+}
+
+function calc() {
+  const leaveVal = document.getElementById("leaveTime").value || "07:45";
+  let leaveMin = minutesFromHHMM(leaveVal);
+  const rtVal = document.getElementById("returnTime").value;
+  let endMin  = minutesFromHHMM(rtVal);
+
+  if (endMin < leaveMin) endMin += 1440;
+
+  const full = document.getElementById("fullOfficeDay").checked;
+  const finish = !full && document.getElementById("officeFinishDay").checked;
+
+  let effectiveEnd = endMin;
+  if (finish) effectiveEnd = Math.min(endMin, CORE_END);
+
+  const totalWorked = Math.max(0, effectiveEnd - leaveMin);
+
+  let rawPre9=0, rawPost17=0, rawCore=0;
+
+  if (leaveMin < GRACE_END)
+    rawPre9 = Math.max(0, Math.min(effectiveEnd,GRACE_END) - leaveMin);
+
+  if (effectiveEnd > GRACE_END) {
+    rawCore = Math.max(0,
+      Math.min(effectiveEnd,CORE_END) - Math.max(leaveMin,GRACE_END)
+    );
+  }
+
+  if (!finish && effectiveEnd > CORE_END)
+    rawPost17 = Math.max(0, effectiveEnd - CORE_END);
+
+  let pre9OT  = rawPre9;
+  let post17OT = rawPost17;
+
+  if (full) {
+    pre9OT = 0;
+    post17OT = 0;
+  } else if (finish) {
+    pre9OT = Math.max(0, rawPre9 - 15);
+    post17OT = 0;
+  } else {
+    if (pre9OT>0) pre9OT = Math.max(0, pre9OT-15);
+    if (post17OT>0) post17OT = Math.max(0, post17OT-15);
+  }
+
+  const baseRate = parseFloat(document.getElementById("baseRate").value.replace(",",".")) || 0;
+  const otDue = ((pre9OT+post17OT)/60)*baseRate;
+
+  document.getElementById("allHours").textContent = fmtHours(totalWorked);
+  document.getElementById("graceHours").textContent = fmtHours(pre9OT);
+  document.getElementById("coreHours").textContent  = fmtHours(rawCore);
+  document.getElementById("otHours").textContent    = fmtHours(post17OT);
+  document.getElementById("otBase").textContent     = fmtMoney(otDue);
+
+  updateDayTypeLabel(full,finish);
+
+  return {
+    totalWorked,
+    rawTotalOT: rawPre9 + rawPost17,
+    otDue
+  };
+}
+
+/* ---------- LOG HANDLING ---------- */
+function updateLogCount() {
+  const rows = [...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+  document.getElementById("logCount").textContent =
+    rows.length===1 ? "1 entry" : `${rows.length} entries`;
+}
+
+function mkBtn(label, cls) {
+  const b=document.createElement("button");
+  b.type="button";
+  b.className=cls||"";
+  b.textContent=label;
+  b.style.border="1px solid var(--border)";
+  b.style.borderRadius="8px";
+  b.style.padding="6px 10px";
+  return b;
+}
+
+function addPlaceholder() {
+  const tb=document.getElementById("logBody");
+  const tr=document.createElement("tr");
+  tr.id="placeholderRow";
+  const td=document.createElement("td");
+  td.colSpan=8;
+  td.className="note";
+  td.textContent="No entries yet — add one above.";
+  tr.appendChild(td);
+  tb.appendChild(tr);
+}
+
+function addRowFromData(item) {
+  const tbody=document.getElementById("logBody");
+  const tr=document.createElement("tr");
+
+  const tdAct=document.createElement("td");
+  const del=mkBtn("Delete","danger");
+  del.onclick=()=>{
+    tr.remove();
+    if (!tbody.querySelector("tr")) addPlaceholder();
+    updateLogCount();
+    saveState();
+  };
+  tdAct.appendChild(del);
+  tr.appendChild(tdAct);
+
+  [
+    item.dateDMY,
+    item.job,
+    item.leaveTime,
+    item.returnTime,
+    item.totalWorked,
+    item.totalOT,
+    item.otDue
+  ].forEach(v=>{
+    const td=document.createElement("td");
+    td.textContent=v;
+    tr.appendChild(td);
+  });
+
+  tbody.appendChild(tr);
+}
+
+function addRow() {
+  const r = calc();
+  const tbody=document.getElementById("logBody");
+  const ph=document.getElementById("placeholderRow");
+  if (ph) ph.remove();
+
+  const isoDate = document.getElementById("date").value;
+  const item = {
+    dateDMY: toDMY(isoDate),
+    job: document.getElementById("jobRef").value || "",
+    leaveTime: document.getElementById("leaveTime").value || "",
+    returnTime: document.getElementById("returnTime").value || "",
+    totalWorked: fmtHours(r.totalWorked),
+    totalOT: fmtHours(r.rawTotalOT),
+    otDue: fmtMoney(r.otDue)
+  };
+
+  addRowFromData(item);
+  updateLogCount();
+  saveState();
+}
+
+function serializeLog() {
+  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+  return rows.map(r=>{
+    return {
+      dateDMY: r.children[1].textContent.trim(),
+      job:     r.children[2].textContent.trim(),
+      leaveTime: r.children[3].textContent.trim(),
+      returnTime: r.children[4].textContent.trim(),
+      totalWorked: r.children[5].textContent.trim(),
+      totalOT: r.children[6].textContent.trim(),
+      otDue: r.children[7].textContent.trim()
+    };
+  });
+}
+
+function restoreLog(items) {
+  const tbody=document.getElementById("logBody");
+  tbody.innerHTML="";
+  if (!items?.length) { addPlaceholder(); updateLogCount(); return; }
+  items.forEach(addRowFromData);
+  updateLogCount();
+}
+
+function clearLog() {
+  if (!confirm("Clear all log entries?")) return;
+  const tbody=document.getElementById("logBody");
+  tbody.innerHTML="";
+  addPlaceholder();
+  updateLogCount();
+  saveState();
+}
+
+/* ---------- EXPORT (WORD + PDF) ---------- */
+function parseHM(s){
+  if (!s) return 0;
+  const m=s.match(/(\d+)h\s*(\d+)m/i);
+  if (!m) return 0;
+  return parseInt(m[1])*60 + parseInt(m[2]);
+}
+function parseMoney(s){
+  if (!s) return 0;
+  const n=s.replace(/[^0-9.\-]/g,"");
+  return parseFloat(n||"0");
+}
+function buildDocHtmlFromLog(){
+  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+  let totWorked=0, totOT=0, totDue=0;
+
+  const bodyHtml = rows.map(r=>{
+    const d=r.children[1].textContent.trim();
+    const job=r.children[2].textContent.trim();
+    const left=r.children[3].textContent.trim();
+    const ret=r.children[4].textContent.trim();
+    const tw=r.children[5].textContent.trim();
+    const tot=r.children[6].textContent.trim();
+    const due=r.children[7].textContent.trim();
+
+    totWorked+=parseHM(tw);
+    totOT+=parseHM(tot);
+    totDue+=parseMoney(due);
+
+    return `
+      <tr>
+        <td>${d}</td>
+        <td>${job}</td>
+        <td>${left}</td>
+        <td>${ret}</td>
+        <td class="tc">${tw}</td>
+        <td class="tc">${tot}</td>
+        <td class="tr">${due}</td>
+      </tr>`;
+  }).join("");
+
+  const dates = rows.map(r=>r.children[1].textContent.trim()).filter(Boolean);
+  const first = dates[0] || "";
+  const last  = dates[dates.length-1] || "";
+
+  const title = `Overtime Logs between ${first} and ${last}`;
+
+  const css = `
+    <style>
+      @page { size: A4 landscape; margin: 1.6cm; }
+      body { font-family: Calibri, Arial, sans-serif; font-size: 12pt; }
+      h1 { font-size: 18pt; margin: 0 0 8pt 0; }
+      h2 { font-size: 14pt; margin-top: 20pt; }
+      table { border-collapse: collapse; width: 100%; margin-top: 12pt; }
+      th, td {
+        border: 1px solid #ccc;
+        padding: 6pt;
+        vertical-align: top;
       }
-      tokenClient.requestAccessToken();
-    }
+      th { background: #efefef; font-weight: bold; }
+      .tc { text-align: center; }
+      .tr { text-align: right; }
+      .totals td { background: #f7f7f7; }
+      ul { margin: 6pt 0 12pt 24pt; padding: 0; }
+    </style>
+  `;
 
-    async function fetchEvents() {
-      logDebug("fetchEvents: start.");
-      if (!accessToken) { setStatus("Sign in first", false); return; }
+  const totalsRow = rows.length ? `
+    <tr class="totals">
+      <td></td><td><b>Totals</b></td><td></td><td></td>
+      <td class="tc"><b>${fmtHours(totWorked)}</b></td>
+      <td class="tc"><b>${fmtHours(totOT)}</b></td>
+      <td class="tr"><b>£${totDue.toFixed(2)}</b></td>
+    </tr>` : "";
 
-      const calId = (document.getElementById("calendarId").value || "primary").trim();
-      const fromStr = document.getElementById("fromDate").value.trim();
-      const toStr = document.getElementById("toDate").value.trim();
-      if (!fromStr || !toStr) {
-        setStatus("No date range set", false);
-        return;
-      }
-      const { timeMin, timeMax } = spanISO(fromStr, toStr);
+  return `
+    <!doctype html>
+    <html>
+    <head><meta charset="utf-8">${css}<title>${title}</title></head>
+    <body>
+      <h1>${title}</h1>
 
-      const url = new URL(
-        "https://www.googleapis.com/calendar/v3/calendars/" +
-        encodeURIComponent(calId) +
-        "/events"
-      );
-      url.searchParams.set("singleEvents", "true");
-      url.searchParams.set("orderBy", "startTime");
-      url.searchParams.set("timeMin", timeMin);
-      url.searchParams.set("timeMax", timeMax);
-      url.searchParams.set("maxResults", "2500");
+      <h2>How the calculations work</h2>
+      <ul>
+        <li>Time before 09:00 and after 17:00 counts as overtime, based on recorded leave and return times.</li>
+        <li>On field days, 15 minutes is deducted from pre-09:00 overtime and 15 minutes from post-17:00 overtime.</li>
+        <li>On office-finish days, pre-09:00 overtime (after a 15 minute deduction) is kept, but there is no overtime after 17:00.</li>
+        <li>Overtime is shown at the base rate (e.g. £15.70/hr).</li>
+      </ul>
 
-      const res = await fetch(url, { headers: { Authorization: "Bearer " + accessToken } });
-      if (!res.ok) { setStatus("API error " + res.status, false); return; }
-      const data = await res.json();
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Job / Location</th>
+            <th>Time left</th>
+            <th>Time returned</th>
+            <th>Total worked</th>
+            <th>Total overtime</th>
+            <th>OT Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bodyHtml || '<tr><td colspan="7">No entries</td></tr>'}
+          ${totalsRow}
+        </tbody>
+      </table>
 
-      const sel = document.getElementById("eventPick");
-      sel.innerHTML = '<option value="">— Select recent event (optional) —</option>';
+      <h2>Authorisation</h2>
+      <p><b>Authorised by:</b> _____________________<br>
+      <b>Date:</b> _____________________</p>
+    </body>
+    </html>
+  `;
+}
 
-      // Sort events so most recent start time is first
-      const items = (data.items || []).slice().sort((a, b) => {
-        const aStart = a.start ? (a.start.dateTime || a.start.date) : null;
-        const bStart = b.start ? (b.start.dateTime || b.start.date) : null;
-        if (!aStart && !bStart) return 0;
-        if (!aStart) return 1;
-        if (!bStart) return -1;
-        return new Date(bStart) - new Date(aStart);
-      });
+function exportWord(){
+  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+  if (!rows.length) return alert("No rows to export.");
+  const html=buildDocHtmlFromLog();
 
-      items.forEach(ev => {
-        const title = ev.summary || "(no title)";
-        let dateStr = "";
-        if (ev.start) {
-          if (ev.start.date) dateStr = ev.start.date;
-          else if (ev.start.dateTime) dateStr = ev.start.dateTime.slice(0,10);
-        }
-        const opt = document.createElement("option");
-        opt.value = title;
-        opt.textContent = title + (dateStr ? "  —  " + dateStr : "");
-        if (dateStr) opt.dataset.date = dateStr;
-        sel.appendChild(opt);
-      });
-      setStatus("Loaded " + items.length + " events", true);
-    }
+  const blob = new Blob([html], {
+    type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  });
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="overtime_logs.docx";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{
+    a.remove();
+    URL.revokeObjectURL(url);
+  },0);
+}
 
-    function autoFetch() {
-      logDebug("autoFetch: attempting to fetch events after sign-in.");
-      fetchEvents().catch(err => {
-        logDebug("autoFetch error: " + (err && err.message ? err.message : String(err)));
-      });
-    }
+function exportPdf(){
+  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+  if (!rows.length) return alert("No rows to export.");
+  const html=buildDocHtmlFromLog();
+  const w=window.open("");
+  w.document.write(html);
+  w.document.close();
+  w.onload = ()=>setTimeout(()=>w.print(),250);
+}
 
-    // ========= Export Helper =========
-    function exportWord() {
-      const rows = Array.from(document.querySelectorAll("#logBody tr")).filter(r => !r.id);
-      if (!rows.length) { alert("No rows to export. Add rows first."); return; }
-      const html = buildDocHtmlFromLog();
-      const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-      const fname = (titleMatch ? titleMatch[1] : "overtime_logs").replace(/\s+/g,"_").toLowerCase() + ".docx";
-      const blob = new Blob([html], {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fname;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 0);
-    }
+/* ---------- API KEY PANEL ---------- */
+function refreshApiKeyStatus(){
+  const key=localStorage.getItem(OPENAI_KEY_STORAGE);
+  document.getElementById("apiKeyStatus").textContent =
+    key ? "API key stored." : "No API key stored.";
+}
+function handleSaveApiKey(){
+  const v=document.getElementById("apiKeyInput").value.trim();
+  if (!v) return alert("Enter key first");
+  localStorage.setItem(OPENAI_KEY_STORAGE,v);
+  document.getElementById("apiKeyInput").value="";
+  refreshApiKeyStatus();
+}
+function handleClearApiKey(){
+  localStorage.removeItem(OPENAI_KEY_STORAGE);
+  refreshApiKeyStatus();
+}
 
-    function exportPdf() {
-      const rows = Array.from(document.querySelectorAll("#logBody tr")).filter(r => !r.id);
-      if (!rows.length) { alert("No rows to export. Add rows first."); return; }
-      const html = buildDocHtmlFromLog();
-      const w = window.open("", "_blank");
-      if (!w) { alert("Pop-up blocked. Allow pop-ups for this site to export PDF."); return; }
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-      w.onload = () => { setTimeout(() => { w.print(); }, 250); };
-    }
-  </script>
+/* ---------- INIT ---------- */
+window.addEventListener("DOMContentLoaded",()=>{
+  logDebug("DOMContentLoaded");
+
+  document.getElementById("signin").onclick = signIn;
+  document.getElementById("fetchEvents").onclick = fetchEvents;
+  document.getElementById("useSel").onclick = ()=>{
+    const opt=document.getElementById("eventPick").selectedOptions[0];
+    if (!opt) return;
+    if (opt.textContent) document.getElementById("jobRef").value = opt.textContent.split(" — ")[0].trim();
+    if (opt.dataset.date) document.getElementById("date").value = opt.dataset.date;
+  };
+
+  document.getElementById("calcBtn").onclick = calc;
+  document.getElementById("addRowBtn").onclick = addRow;
+  document.getElementById("clearLog").onclick = clearLog;
+  document.getElementById("exportDoc").onclick = exportWord;
+  document.getElementById("exportPdf").onclick = exportPdf;
+
+  document.getElementById("saveApiKeyBtn").onclick = handleSaveApiKey;
+  document.getElementById("clearApiKeyBtn").onclick = handleClearApiKey;
+  refreshApiKeyStatus();
+
+  loadState();
+  updateDayTypeLabel(false,false);
+});
+
+function saveState(){
+  const data={
+    log: serializeLog(),
+    baseRate: document.getElementById("baseRate").value,
+    calendarId: document.getElementById("calendarId").value
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadState(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  const data=JSON.parse(raw);
+  document.getElementById("baseRate").value = data.baseRate || "15.70";
+  document.getElementById("calendarId").value = data.calendarId ||
+    "bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com";
+  if (Array.isArray(data.log)) restoreLog(data.log);
+}
+</script>
 </body>
 </html>
