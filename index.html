@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AVD OT Calculator – Stable + Calendar (Auto-Fetch, v4.2)</title>
+  <title>AVD OT Calculator – Stable + Calendar (Auto-Fetch, v4.3)</title>
   <meta name="color-scheme" content="light dark" />
   <meta name="google-oauth-client-id"
         content="105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com" />
@@ -246,7 +246,8 @@
     details.debug,
     details.api,
     details.calendar-settings,
-    details.calendar-range {
+    details.calendar-range,
+    details.calendar-day-select {
       margin-top:10px;
       border-radius:12px;
       border:1px dashed var(--border);
@@ -258,13 +259,15 @@
       details.debug,
       details.api,
       details.calendar-settings,
-      details.calendar-range { background:#f3f4f6; }
+      details.calendar-range,
+      details.calendar-day-select { background:#f3f4f6; }
     }
 
     details.debug summary,
     details.api summary,
     details.calendar-settings summary,
-    details.calendar-range summary {
+    details.calendar-range summary,
+    details.calendar-day-select summary {
       cursor:pointer;
       font-size:12px;
       color:var(--muted);
@@ -312,7 +315,7 @@
         <div>
           <h1>
             AVD Overtime Calculator
-            <span class="version">v4.2</span>
+            <span class="version">v4.3</span>
           </h1>
           <div class="muted">
             Daily calculator: leave defaults to <strong>07:45</strong> (adjustable below).
@@ -331,7 +334,7 @@
           <div style="align-self:end;">
             <div class="btnrow">
               <button id="signin" class="primary" type="button">Sign in to Google</button>
-              <button id="fetchEvents" type="button">Load last 7 days</button>
+              <button id="fetchEvents" type="button">Load last 7 days (incl. today)</button>
             </div>
             <div id="authStatus" class="note">Status: Not signed in</div>
           </div>
@@ -364,7 +367,20 @@
             </div>
           </div>
           <div class="small-note" style="margin-top:6px;">
-            These dates control which events are shown in the dropdown above.
+            These dates reflect the current 7-day window used for the events above.
+          </div>
+        </details>
+
+        <!-- Hidden: single-day selector -->
+        <details class="calendar-day-select">
+          <summary>Hidden: load events for a specific day</summary>
+          <div style="margin-top:8px;max-width:260px;">
+            <label for="singleDay">Day</label>
+            <input id="singleDay" type="date" />
+            <div class="small-note">
+              Loads only events from this single day into the dropdown above.
+            </div>
+            <button id="fetchSingleDay" type="button" style="margin-top:8px;">Load this day only</button>
           </div>
         </details>
       </div>
@@ -603,12 +619,22 @@
 
       const calId = (document.getElementById("calendarId").value || "primary").trim();
 
-      const fromStr = document.getElementById("fromDate").value.trim();
-      const toStr = document.getElementById("toDate").value.trim();
-      if (!fromStr || !toStr) {
-        setStatus("No date range set", false);
-        return;
-      }
+      // Always use the most recent 7 days including today
+      const now = new Date();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 6); // 7 day window including today
+      start.setHours(0, 0, 0, 0);
+
+      const fmt = d => d.toISOString().slice(0,10);
+      const fromStr = fmt(start);
+      const toStr = fmt(end);
+
+      // Reflect the window in the inputs
+      const fromEl = document.getElementById("fromDate");
+      const toEl = document.getElementById("toDate");
+      if (fromEl) fromEl.value = fromStr;
+      if (toEl) toEl.value = toStr;
 
       const { timeMin, timeMax } = spanISO(fromStr, toStr);
 
@@ -657,6 +683,66 @@
       });
       setStatus("Loaded " + items.length + " events", true);
       logDebug("fetchEvents: loaded " + items.length + " events.");
+    }
+
+    async function fetchEventsSingleDay() {
+      logDebug("fetchEventsSingleDay: start.");
+      if (!accessToken) { setStatus("Sign in first", false); return; }
+
+      const dayStr = (document.getElementById("singleDay").value || "").trim();
+      if (!dayStr) {
+        setStatus("Select a day first", false);
+        return;
+      }
+
+      const calId = (document.getElementById("calendarId").value || "primary").trim();
+      const { timeMin, timeMax } = timeRangeISO(dayStr);
+
+      const url = new URL(
+        "https://www.googleapis.com/calendar/v3/calendars/" +
+        encodeURIComponent(calId) +
+        "/events"
+      );
+      url.searchParams.set("singleEvents", "true");
+      url.searchParams.set("orderBy", "startTime");
+      url.searchParams.set("timeMin", timeMin);
+      url.searchParams.set("timeMax", timeMax);
+      url.searchParams.set("maxResults", "2500");
+
+      logDebug("fetchEventsSingleDay: " + url.toString());
+
+      const res = await fetch(url, { headers: { Authorization: "Bearer " + accessToken } });
+      if (!res.ok) { setStatus("API error " + res.status, false); return; }
+      const data = await res.json();
+
+      const sel = document.getElementById("eventPick");
+      sel.innerHTML = '<option value="">— Select recent event (optional) —</option>';
+
+      // Sort events so most recent start time is first
+      const items = (data.items || []).slice().sort((a, b) => {
+        const aStart = a.start ? (a.start.dateTime || a.start.date) : null;
+        const bStart = b.start ? (b.start.dateTime || b.start.date) : null;
+        if (!aStart && !bStart) return 0;
+        if (!aStart) return 1;
+        if (!bStart) return -1;
+        return new Date(bStart) - new Date(aStart);
+      });
+
+      items.forEach(ev => {
+        const title = ev.summary || "(no title)";
+        let dateStr = "";
+        if (ev.start) {
+          if (ev.start.date) dateStr = ev.start.date;
+          else if (ev.start.dateTime) dateStr = ev.start.dateTime.slice(0,10);
+        }
+        const opt = document.createElement("option");
+        opt.value = title;
+        opt.textContent = title + (dateStr ? "  —  " + dateStr : "");
+        if (dateStr) opt.dataset.date = dateStr;
+        sel.appendChild(opt);
+      });
+      setStatus("Loaded " + items.length + " events for " + dayStr, true);
+      logDebug("fetchEventsSingleDay: loaded " + items.length + " events.");
     }
 
     function autoFetch() {
@@ -747,6 +833,11 @@
       const calEl = document.getElementById("calendarId");
       if (!calEl.value) {
         calEl.value = "bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com";
+      }
+
+      const single = document.getElementById("singleDay");
+      if (single && !single.value) {
+        single.value = fmt(now);
       }
     }
 
@@ -1191,6 +1282,14 @@
       document.getElementById("fetchEvents").addEventListener("click", () => {
         fetchEvents().catch(err => logDebug("fetchEvents click error: " + (err && err.message ? err.message : String(err))));
       });
+
+      const singleBtn = document.getElementById("fetchSingleDay");
+      if (singleBtn) {
+        singleBtn.addEventListener("click", () => {
+          fetchEventsSingleDay().catch(err => logDebug("fetchEventsSingleDay click error: " + (err && err.message ? err.message : String(err))));
+        });
+      }
+
       document.getElementById("useSel").addEventListener("click", () => {
         const pick = document.getElementById("eventPick");
         const jobRef = document.getElementById("jobRef");
