@@ -484,7 +484,7 @@
             </tbody>
           </table>
           <div class="btnrow">
-            <button id="exportDoc" class="primary" type="button">Export to Word (.doc)</button>
+            <button id="exportDoc" class="primary" type="button">Export to Word (.docx)</button>
             <button id="exportPdf" type="button">Export to PDF</button>
             <button id="clearLog" class="danger" type="button">Clear table</button>
           </div>
@@ -545,6 +545,9 @@
 
     const GRACE_END = 9*60;      // 09:00
     const CORE_END  = 17*60;     // 17:00
+
+    // For export meta
+    let lastCalcMeta = null;
 
     // ========= DEBUG LOGGER =========
     function logDebug(msg) {
@@ -968,12 +971,28 @@
 
       updateDayTypeLabel(fullOfficeDay, officeFinishDay);
 
+      // Store meta for export (raw totals ignoring 15m deductions, but respecting office rules)
+      const rawTotalWorkedMins = Math.max(0, endMin - leaveMin);
+      const rawOvertimeMins = pre9Span + post17Span;
+
+      lastCalcMeta = {
+        date: document.getElementById("date").value || "",
+        job: document.getElementById("jobRef").value || "",
+        leaveTimeStr: leaveVal,
+        returnTimeStr: rtVal,
+        totalWorkedRawMins: rawTotalWorkedMins,
+        rawOvertimeMins: rawOvertimeMins,
+        otDue: otBase
+      };
+
       logDebug(
         "calc spans: leave=" + leaveMin +
         " total=" + totalWorked +
+        " rawTotalWorked=" + rawTotalWorkedMins +
         " pre9Span=" + pre9Span + " pre9OT=" + pre9OT +
         " core=" + core +
         " post17Span=" + post17Span + " post17OT=" + post17OT +
+        " rawOT=" + rawOvertimeMins +
         " fullOfficeDay=" + fullOfficeDay +
         " officeFinishDay=" + officeFinishDay
       );
@@ -984,7 +1003,7 @@
       const rows = Array.from(document.querySelectorAll("#logBody tr")).filter(r => !r.id);
       const badge = document.getElementById("logCount");
       const n = rows.length;
-      badge.textContent = n === 1 ? "1 entry" : n + " entries";
+      badge.textContent = n === 1 ? "1 entry" : n + "entries";
     }
 
     function mkBtn(label, className) {
@@ -1014,6 +1033,21 @@
       const tbody = document.getElementById("logBody");
       const tr = document.createElement("tr");
 
+      // Attach meta (if present) as data attributes for export
+      if (item.meta) {
+        if (item.meta.leaveTimeStr) tr.dataset.leaveTime = item.meta.leaveTimeStr;
+        if (item.meta.returnTimeStr) tr.dataset.returnTime = item.meta.returnTimeStr;
+        if (typeof item.meta.totalWorkedRawMins === "number") {
+          tr.dataset.rawTotalWorkedMins = String(item.meta.totalWorkedRawMins);
+        }
+        if (typeof item.meta.rawOvertimeMins === "number") {
+          tr.dataset.rawOvertimeMins = String(item.meta.rawOvertimeMins);
+        }
+        if (typeof item.meta.otDue === "number") {
+          tr.dataset.otDue = String(item.meta.otDue);
+        }
+      }
+
       const tdAct = document.createElement("td");
       const del = mkBtn("Delete", "danger");
       del.addEventListener("click", () => {
@@ -1042,6 +1076,8 @@
       const ph = document.getElementById("placeholderRow");
       if (ph) ph.remove();
 
+      const meta = lastCalcMeta || null;
+
       const item = {
         date: document.getElementById("date").value || "",
         returnTime: document.getElementById("returnTime").value || "",
@@ -1050,7 +1086,8 @@
         pre9: document.getElementById("graceHours").textContent || "",
         core: document.getElementById("coreHours").textContent || "",
         post17: document.getElementById("otHours").textContent || "",
-        otBase: document.getElementById("otBase").textContent || ""
+        otBase: document.getElementById("otBase").textContent || "",
+        meta
       };
 
       addRowFromData(item);
@@ -1089,92 +1126,140 @@
       return parseFloat(v || "0");
     }
 
+    function formatDateDMY(dateStr) {
+      if (!dateStr) return "";
+      const parts = dateStr.split("-");
+      if (parts.length !== 3) return dateStr;
+      const [y,m,d] = parts;
+      return d + "/" + m + "/" + y;
+    }
+
     function buildDocHtmlFromLog() {
-      const colWidths = ["12%","10%","34%","11%","8%","8%","9%","8%"];
-      const headCells = ["Date","Return time","Job / Location","Total worked","Pre-09 OT","Core","Post-17 OT","OT @ base"];
+      const colWidths = ["14%","32%","11%","11%","11%","11%","10%"];
+      const headCells = [
+        "Date",
+        "Job / Location",
+        "Time left",
+        "Time returned",
+        "Total worked",
+        "Total overtime",
+        "OT due (deductions applied)"
+      ];
 
       const rows = Array.from(document.querySelectorAll("#logBody tr")).filter(r => !r.id);
-      let totTotal=0, totPre9=0, totCore=0, totPost17=0, totMoney=0;
+
+      let totWorkedRawMins = 0;
+      let totOTRawMins = 0;
+      let totMoney = 0;
 
       const bodyRowsHtml = rows.map(r => {
-        const date = r.children[1].textContent.trim();
-        const rt   = r.children[2].textContent.trim();
+        const dateYMD = r.children[1].textContent.trim();
+        const dateDMY = formatDateDMY(dateYMD);
         const job  = r.children[3].textContent.trim();
-        const total= r.children[4].textContent.trim();
-        const pre9 = r.children[5].textContent.trim();
-        const core = r.children[6].textContent.trim();
-        const post = r.children[7].textContent.trim();
-        const base = r.children[8].textContent.trim();
 
-        totTotal += parseHM(total);
-        totPre9  += parseHM(pre9);
-        totCore  += parseHM(core);
-        totPost17+= parseHM(post);
-        totMoney += parseMoney(base);
+        const leaveTime = r.dataset.leaveTime || "";
+        const returnTimeText = (r.dataset.returnTime || r.children[2].textContent.trim());
+
+        let workedRawMins;
+        if (r.dataset.rawTotalWorkedMins) {
+          workedRawMins = parseFloat(r.dataset.rawTotalWorkedMins);
+        } else {
+          // Fallback for legacy rows: use displayed total worked
+          workedRawMins = parseHM(r.children[4].textContent.trim());
+        }
+
+        let otRawMins;
+        if (r.dataset.rawOvertimeMins) {
+          otRawMins = parseFloat(r.dataset.rawOvertimeMins);
+        } else {
+          // Fallback: sum displayed pre/post OT (post-deduction)
+          otRawMins = parseHM(r.children[5].textContent.trim()) +
+                      parseHM(r.children[7].textContent.trim());
+        }
+
+        let otDue;
+        if (r.dataset.otDue) {
+          otDue = parseFloat(r.dataset.otDue);
+        } else {
+          otDue = parseMoney(r.children[8].textContent.trim());
+        }
+
+        const workedRawStr = fmtHM(workedRawMins);
+        const otRawStr = fmtHM(otRawMins);
+        const otDueStr = "£" + otDue.toFixed(2);
+
+        totWorkedRawMins += workedRawMins;
+        totOTRawMins += otRawMins;
+        totMoney += otDue;
 
         return "<tr>" +
-          "<td>" + date + "</td>" +
-          "<td>" + rt + "</td>" +
+          "<td>" + dateDMY + "</td>" +
           "<td>" + job + "</td>" +
-          "<td class=\"tc\">" + total + "</td>" +
-          "<td class=\"tc\">" + pre9 + "</td>" +
-          "<td class=\"tc\">" + core + "</td>" +
-          "<td class=\"tc\">" + post + "</td>" +
-          "<td class=\"tr\">" + base + "</td>" +
+          "<td class=\"tc\">" + (leaveTime || "") + "</td>" +
+          "<td class=\"tc\">" + (returnTimeText || "") + "</td>" +
+          "<td class=\"tc\">" + workedRawStr + "</td>" +
+          "<td class=\"tc\">" + otRawStr + "</td>" +
+          "<td class=\"tr\">" + otDueStr + "</td>" +
         "</tr>";
       }).join("");
 
       const totalsRow = rows.length
         ? "<tr class=\"totals\">" +
             "<td></td>" +
-            "<td></td>" +
             "<td><b>Totals</b></td>" +
-            "<td class=\"tc\"><b>" + fmtHM(totTotal) + "</b></td>" +
-            "<td class=\"tc\"><b>" + fmtHM(totPre9) + "</b></td>" +
-            "<td class=\"tc\"><b>" + fmtHM(totCore) + "</b></td>" +
-            "<td class=\"tc\"><b>" + fmtHM(totPost17) + "</b></td>" +
+            "<td></td>" +
+            "<td></td>" +
+            "<td class=\"tc\"><b>" + fmtHM(totWorkedRawMins) + "</b></td>" +
+            "<td class=\"tc\"><b>" + fmtHM(totOTRawMins) + "</b></td>" +
             "<td class=\"tr\"><b>£" + totMoney.toFixed(2) + "</b></td>" +
           "</tr>"
         : "";
 
-      const dates = rows.map(r => r.children[1].textContent.trim()).filter(Boolean).sort();
-      const title = dates.length
-        ? "Overtime Logs between " + dates[0] + " and " + dates[dates.length-1]
-        : "Overtime Logs";
+      const dateStrings = rows
+        .map(r => r.children[1].textContent.trim())
+        .filter(Boolean)
+        .sort();
+
+      let title;
+      if (dateStrings.length) {
+        const startYMD = dateStrings[0];
+        const endYMD = dateStrings[dateStrings.length - 1];
+        const startDMY = formatDateDMY(startYMD);
+        const endDMY = formatDateDMY(endYMD);
+        title = "Overtime Logs between " + startDMY + " and " + endDMY;
+      } else {
+        title = "Overtime Logs";
+      }
 
       const css = "<style>" +
         "@page { size: A4 landscape; margin: 1.6cm; }" +
         "body { font-family: Calibri, Arial, sans-serif; font-size: 12pt; color: #000; }" +
         "h1 { font-size: 18pt; margin: 0 0 8pt 0; }" +
+        "h2 { font-size: 14pt; margin: 0 0 6pt 0; }" +
         "table { border-collapse: collapse; width: 100%; }" +
         "th, td { border: 1px solid #cccccc; padding: 6pt; vertical-align: top; }" +
         "th { background: #efefef; font-weight: bold; }" +
         ".tc { text-align: center; }" +
         ".tr { text-align: right; }" +
         ".totals td { background: #f7f7f7; }" +
-        ".explain { margin: 0 0 10pt 0; }" +
-        ".auth { margin-top: 14pt; }" +
+        "ul { margin: 0 0 10pt 18pt; padding: 0; }" +
       "</style>";
 
       const colgroup = "<colgroup>" + colWidths.map(w => "<col style=\"width:" + w + "\">").join("") + "</colgroup>";
       const thead = "<thead><tr>" + headCells.map(h => "<th>" + h + "</th>").join("") + "</tr></thead>";
       const tbody = "<tbody>" +
-        (bodyRowsHtml || "<tr><td colspan=\"8\">No entries</td></tr>") +
+        (bodyRowsHtml || "<tr><td colspan=\"7\">No entries</td></tr>") +
         totalsRow +
       "</tbody>";
 
-      const explain = "<div class=\"explain\">" +
-        "<p><b>How the calculations work</b></p>" +
-        "<ul style=\"margin:0 0 6pt 18pt;padding:0\">" +
-          "<li>Leave time defaults to 07:45 but can be adjusted for each day.</li>" +
-          "<li>Time before 09:00 and after 17:00 counts as overtime, based on your recorded leave and return times.</li>" +
+      const explain =
+        "<h2>How the calculations work</h2>" +
+        "<ul>" +
+          "<li>Time before 09:00 and after 17:00 counts as overtime, based on recorded leave and return times.</li>" +
           "<li>On field days, 15 minutes is deducted from pre-09:00 overtime and 15 minutes from post-17:00 overtime.</li>" +
           "<li>On office-finish days, pre-09:00 overtime (after a 15 minute deduction) is kept, but there is no overtime after 17:00.</li>" +
-          "<li>Full office/admin days can be flagged so that no overtime is counted.</li>" +
-          "<li>Core paid hours are 09:00–17:00.</li>" +
           "<li>Overtime is shown at the base rate (e.g. £15.70/hr).</li>" +
-        "</ul>" +
-      "</div>";
+        "</ul>";
 
       const auth = "<div class=\"auth\">" +
         "<h2>Authorisation</h2>" +
@@ -1203,8 +1288,10 @@
       if (!rows.length) { alert("No rows to export. Add rows first."); return; }
       const html = buildDocHtmlFromLog();
       const titleMatch = html.match(/<title>(.*?)<\/title>/i);
-      const fname = (titleMatch ? titleMatch[1] : "overtime_logs").replace(/\s+/g,"_").toLowerCase() + ".doc";
-      const blob = new Blob([html], { type: "application/msword" });
+      const fname = (titleMatch ? titleMatch[1] : "overtime_logs").replace(/\s+/g,"_").toLowerCase() + ".docx";
+      const blob = new Blob([html], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
