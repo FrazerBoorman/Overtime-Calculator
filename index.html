@@ -535,7 +535,115 @@
   </div>
 
   <script>
-    // All necessary functions (calculations, logging, export, etc.) remain same. I’ll focus on fixing export issues directly:
+    const CLIENT_ID = "105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com";
+    const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+    let accessToken = null;
+    let tokenClient = null;
+
+    const STORAGE_KEY = "avd_ot_stable_calendar_autofetch_v4"; // keep same key for now
+    const OPENAI_KEY_STORAGE = "avd_job_report_openai_key";
+
+    const GRACE_END = 9*60;      // 09:00
+    const CORE_END  = 17*60;     // 17:00
+
+    // ========== Calendar & Fetch Logic ==========
+    function initAuth() {
+      if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+        logDebug("initAuth: Google auth library not ready yet.");
+        return;
+      }
+      tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        prompt: "",
+        callback: (resp) => {
+          if (resp && resp.access_token) {
+            accessToken = resp.access_token;
+            setStatus("Signed in", true);
+            autoFetch();
+          } else {
+            setStatus("Sign-in failed", false);
+          }
+        }
+      });
+      logDebug("initAuth: tokenClient initialised.");
+    }
+
+    async function signIn() {
+      logDebug("signIn: clicked.");
+      if (!tokenClient) initAuth();
+      if (!tokenClient) {
+        setStatus("Auth library not ready. Try again.", false);
+        return;
+      }
+      tokenClient.requestAccessToken();
+    }
+
+    async function fetchEvents() {
+      logDebug("fetchEvents: start.");
+      if (!accessToken) { setStatus("Sign in first", false); return; }
+
+      const calId = (document.getElementById("calendarId").value || "primary").trim();
+      const fromStr = document.getElementById("fromDate").value.trim();
+      const toStr = document.getElementById("toDate").value.trim();
+      if (!fromStr || !toStr) {
+        setStatus("No date range set", false);
+        return;
+      }
+      const { timeMin, timeMax } = spanISO(fromStr, toStr);
+
+      const url = new URL(
+        "https://www.googleapis.com/calendar/v3/calendars/" +
+        encodeURIComponent(calId) +
+        "/events"
+      );
+      url.searchParams.set("singleEvents", "true");
+      url.searchParams.set("orderBy", "startTime");
+      url.searchParams.set("timeMin", timeMin);
+      url.searchParams.set("timeMax", timeMax);
+      url.searchParams.set("maxResults", "2500");
+
+      const res = await fetch(url, { headers: { Authorization: "Bearer " + accessToken } });
+      if (!res.ok) { setStatus("API error " + res.status, false); return; }
+      const data = await res.json();
+
+      const sel = document.getElementById("eventPick");
+      sel.innerHTML = '<option value="">— Select recent event (optional) —</option>';
+
+      // Sort events so most recent start time is first
+      const items = (data.items || []).slice().sort((a, b) => {
+        const aStart = a.start ? (a.start.dateTime || a.start.date) : null;
+        const bStart = b.start ? (b.start.dateTime || b.start.date) : null;
+        if (!aStart && !bStart) return 0;
+        if (!aStart) return 1;
+        if (!bStart) return -1;
+        return new Date(bStart) - new Date(aStart);
+      });
+
+      items.forEach(ev => {
+        const title = ev.summary || "(no title)";
+        let dateStr = "";
+        if (ev.start) {
+          if (ev.start.date) dateStr = ev.start.date;
+          else if (ev.start.dateTime) dateStr = ev.start.dateTime.slice(0,10);
+        }
+        const opt = document.createElement("option");
+        opt.value = title;
+        opt.textContent = title + (dateStr ? "  —  " + dateStr : "");
+        if (dateStr) opt.dataset.date = dateStr;
+        sel.appendChild(opt);
+      });
+      setStatus("Loaded " + items.length + " events", true);
+    }
+
+    function autoFetch() {
+      logDebug("autoFetch: attempting to fetch events after sign-in.");
+      fetchEvents().catch(err => {
+        logDebug("autoFetch error: " + (err && err.message ? err.message : String(err)));
+      });
+    }
+
+    // ========= Export Helper =========
     function exportWord() {
       const rows = Array.from(document.querySelectorAll("#logBody tr")).filter(r => !r.id);
       if (!rows.length) { alert("No rows to export. Add rows first."); return; }
@@ -568,8 +676,6 @@
       w.document.close();
       w.onload = () => { setTimeout(() => { w.print(); }, 250); };
     }
-
-    // Please make sure to test both export buttons after applying this code.
   </script>
 </body>
 </html>
