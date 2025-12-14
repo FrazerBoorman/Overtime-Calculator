@@ -3,12 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AVD OT Calculator – Stable + Calendar (Auto-Fetch, v4.4)</title>
+  <title>AVD Overtime Calculator</title>
   <meta name="color-scheme" content="light dark" />
   <meta name="google-oauth-client-id"
         content="105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com" />
-
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
@@ -38,11 +36,7 @@
       color:var(--text);
     }
 
-    .wrap {
-      max-width: 1200px;
-      margin:0 auto;
-      padding:18px;
-    }
+    .wrap { max-width: 1200px; margin:0 auto; padding:18px; }
 
     .card {
       background:var(--card);
@@ -63,21 +57,25 @@
       flex-wrap:wrap;
     }
 
-    h2 {
-      margin:16px 0 8px;
-      font-size:18px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-
-    .version {
+    .version-btn {
       font-size:11px;
+      font-weight:600;
+      color:var(--muted);
       padding:2px 8px;
       border-radius:999px;
       border:1px solid var(--border);
-      color:var(--muted);
+      background:transparent;
+      cursor:pointer;
+      transition: background .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease, transform .06s ease;
     }
+    .version-btn:hover {
+      border-color:var(--accent);
+      color:var(--accent);
+      background:var(--accent-soft);
+      box-shadow:0 4px 10px rgba(15,23,42,0.4);
+      transform:translateY(-0.5px);
+    }
+    .version-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
     .muted { color:var(--muted); font-size:14px; }
 
@@ -94,6 +92,7 @@
       cursor:pointer;
       transition: border-color .12s ease, background .12s ease, color .12s ease,
                   transform .06s ease, box-shadow .12s ease;
+      background:transparent;
     }
     .pill:hover {
       border-color:var(--accent);
@@ -140,19 +139,11 @@
       box-sizing:border-box;
     }
 
-    input, select, textarea {
-      width:100%;
-    }
+    input, select, textarea { width:100%; }
     textarea { resize:vertical; min-height:70px; }
-
     input::placeholder, textarea::placeholder { color:var(--muted); }
 
-    .small-note,
-    .note {
-      font-size:11px;
-      color:var(--muted);
-      margin-top:3px;
-    }
+    .small-note, .note { font-size:11px; color:var(--muted); margin-top:3px; }
 
     .grid {
       display:grid;
@@ -160,12 +151,7 @@
       gap:10px;
     }
 
-    .btn-row, .btnrow {
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:8px;
-    }
+    .btnrow, .btn-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
 
     button {
       display:inline-flex;
@@ -174,21 +160,11 @@
       cursor:pointer;
       transition:transform .06s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
     }
+    button.primary { border-color:var(--accent); background:linear-gradient(180deg,var(--accent-soft),transparent); }
+    button:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(15,23,42,0.5); }
 
-    button.primary {
-      border-color:var(--accent);
-      background:linear-gradient(180deg,var(--accent-soft),transparent);
-    }
-
-    button:hover {
-      transform:translateY(-1px);
-      box-shadow:0 4px 12px rgba(15,23,42,0.5);
-    }
-
-    .danger {
-      border-color:var(--danger) !important;
-      color:var(--danger);
-    }
+    .danger { border-color:var(--danger) !important; color:var(--danger); }
+    .danger-text { color:var(--danger); }
 
     /* KPI cards */
     .kpi {
@@ -205,49 +181,22 @@
     }
     .big { font-size:20px; font-weight:700; }
 
-    /* Log / table */
-    table {
-      width:100%;
-      border-collapse:collapse;
-      font-size:12px;
-      margin-top:10px;
-    }
-    th, td {
-      border:1px solid var(--border);
-      padding:6px 8px;
-      vertical-align:top;
-      text-align:left;
-    }
-    th {
-      background:rgba(15,23,42,0.6);
-      font-weight:600;
-    }
-    @media (prefers-color-scheme: light) {
-      th { background:#e5e7eb; }
-    }
+    /* Table */
+    table { width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
+    th, td { border:1px solid var(--border); padding:6px 8px; vertical-align:top; text-align:left; }
+    th { background:rgba(15,23,42,0.6); font-weight:600; }
+    @media (prefers-color-scheme: light) { th { background:#e5e7eb; } }
 
-    .logbox {
-      border:2px dashed var(--border);
-      border-radius:10px;
-      padding:10px;
-      background:var(--panel);
-    }
+    .logbox { border:2px dashed var(--border); border-radius:10px; padding:10px; background:var(--panel); }
+    .badge { display:inline-block; font-size:12px; border:1px solid var(--border); padding:2px 8px; border-radius:999px; color:var(--muted); }
 
-    .badge {
-      display:inline-block;
-      font-size:12px;
-      border:1px solid var(--border);
-      padding:2px 8px;
-      border-radius:999px;
-      color:var(--muted);
-    }
-
-    /* Debug & API & Calendar settings panels */
     details.debug,
     details.api,
     details.calendar-settings,
+    details.ai-debugger,
+    details.replacement-output,
     details.calendar-range,
-    details.calendar-day-select {
+    details.tool-info {
       margin-top:10px;
       border-radius:12px;
       border:1px dashed var(--border);
@@ -259,31 +208,28 @@
       details.debug,
       details.api,
       details.calendar-settings,
+      details.ai-debugger,
+      details.replacement-output,
       details.calendar-range,
-      details.calendar-day-select { background:#f3f4f6; }
+      details.tool-info { background:#f3f4f6; }
     }
 
-    details.calendar-range {
-      display:none; /* HIDDEN as you requested */
-    }
+    /* HIDE advanced date range section by default (still available) */
+    details.calendar-range { display:none; }
 
     details.debug summary,
     details.api summary,
     details.calendar-settings summary,
+    details.ai-debugger summary,
+    details.replacement-output summary,
     details.calendar-range summary,
-    details.calendar-day-select summary {
+    details.tool-info summary {
       cursor:pointer;
       font-size:12px;
       color:var(--muted);
     }
 
-    details.debug pre {
-      white-space:pre-wrap;
-      font-size:11px;
-      margin-top:4px;
-    }
-
-    .danger-text { color:var(--danger); }
+    details.debug pre { white-space:pre-wrap; font-size:11px; margin-top:4px; }
 
     .flag-row {
       display:flex;
@@ -299,79 +245,124 @@
       font-weight:500;
       margin-bottom:0;
     }
-    .flag-row input[type="checkbox"] {
-      width:auto;
-      accent-color:var(--accent);
-    }
+    .flag-row input[type="checkbox"] { width:auto; accent-color:var(--accent); }
 
-    .day-type-label {
-      margin-top:8px;
-      font-size:12px;
-      color:var(--muted);
+    .day-type-label { margin-top:8px; font-size:12px; color:var(--muted); }
+
+    .tool-info-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap:8px;
+      font-size:13px;
     }
+    .tool-info-item-label {
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:2px;
+    }
+    .tool-info-item-value { font-size:13px; }
   </style>
 </head>
-
 
 <body>
   <div class="wrap">
     <div class="card">
-      <!-- Header with version + pill -->
+      <!-- Header -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
         <div>
           <h1>
-            AVD Overtime Calculator
-            <span class="version">v4.4</span>
+            <span id="toolNameHeading">AVD Overtime Calculator</span>
+            <button id="copyVersionBtn" class="version-btn" type="button"
+                    title="Copy full index.html to clipboard"
+                    aria-label="Copy full index.html to clipboard">v0.10</button>
           </h1>
-          <div class="muted">
-            Daily calculator: leave defaults to <strong>07:45</strong> (adjustable below).
-            Time before <strong>09:00</strong> and after <strong>17:00</strong> counts as overtime,
-            with a <strong>15 minute</strong> deduction each side on field days.
-            Full office/admin and office-finish days can be flagged to adjust overtime.
+          <div class="muted" id="toolShortDescription">
+            Daily overtime calculator with optional Google Calendar event picker.
           </div>
         </div>
         <a href="https://frazerboorman.github.io/" class="pill">Frazer · AVD TOOLS</a>
       </div>
 
-      <!-- STEP 1 – Calendar -->
+      <!-- Tool info (HIDDEN by default) -->
       <div class="section">
-        <div class="section-title">Step 1 – Load events from Google Calendar</div>
-        <div class="grid">
-          <div style="align-self:end;">
-            <div class="btnrow">
-              <button id="signin" class="primary" type="button">Sign in to Google</button>
-              <button id="fetchEvents" type="button">Load last 7 days (incl. today)</button>
+        <details class="tool-info" id="toolInfoDetails">
+          <summary class="section-title" style="margin:0;">Tool info (advanced)</summary>
+
+          <div style="margin-top:10px;">
+            <div class="tool-info-grid">
+              <div>
+                <div class="tool-info-item-label">Tool name</div>
+                <div class="tool-info-item-value" id="toolNameInfo">AVD Overtime Calculator</div>
+              </div>
+              <div>
+                <div class="tool-info-item-label">Version</div>
+                <div class="tool-info-item-value" id="toolVersionInfo">v0.10</div>
+              </div>
+              <div>
+                <div class="tool-info-item-label">Last updated</div>
+                <div class="tool-info-item-value" id="toolLastUpdatedInfo">2025-12-14</div>
+              </div>
+              <div>
+                <div class="tool-info-item-label">Tool code</div>
+                <div class="tool-info-item-value" id="toolCodeInfo">OT-CALC</div>
+              </div>
             </div>
-            <div id="authStatus" class="note">Status: Not signed in</div>
+
+            <div class="small-note" style="margin-top:6px;" id="toolNotesInfo">
+              Notes: This tool follows the shared AVD template (calendar picker, shared OpenAI key panel, debug + AI debugger).
+            </div>
           </div>
+        </details>
+      </div>
+
+      <!-- STEP 1 – Calendar (From/To hidden; loads last 14 days by default) -->
+      <div class="section">
+        <div class="section-title">Step 1 – (Optional) Load events from Google Calendar</div>
+
+        <div class="btnrow">
+          <button id="signin" class="primary" type="button">Sign in to Google</button>
+          <button id="fetchEvents" type="button">Load last 14 days (incl. today)</button>
         </div>
+        <div id="authStatus" class="note">Status: Not signed in</div>
 
         <div class="grid" style="margin-top:12px;">
           <div>
-            <label for="eventPick">Recent events (newest first)</label>
+            <label for="eventPick">Events (newest first)</label>
             <select id="eventPick">
-              <option value="">— Select recent event (optional) —</option>
+              <option value="">— Select event (optional) —</option>
             </select>
           </div>
           <div style="align-self:end;">
-            <button id="useSel" type="button">Use selection</button>
-            <div class="note">Picking an event auto-fills the Date and Job fields.</div>
+            <button id="useSel" type="button">Use selected event</button>
+            <div class="note">Auto-fills the Date + Job/Location.</div>
           </div>
         </div>
 
-        <!-- Advanced calendar date range — now hidden -->
-        <details class="calendar-range">
-          <summary>Advanced: calendar date range (defaults to last 7 days including today)</summary>
+        <!-- Advanced date range (hidden by default; still available) -->
+        <details class="calendar-range" id="advancedRangeDetails">
+          <summary>Advanced: custom calendar date range</summary>
+
           <div class="grid" style="margin-top:8px;">
             <div>
               <label for="fromDate">From</label>
               <input id="fromDate" type="date" />
+              <div class="small-note">Defaults to last 14 days.</div>
             </div>
             <div>
               <label for="toDate">To</label>
               <input id="toDate" type="date" />
+              <div class="small-note">Defaults to today (you can set a future end date).</div>
             </div>
           </div>
+
+          <div class="btnrow">
+            <button id="applyRangeBtn" type="button">Apply date range</button>
+            <button id="resetRangeBtn" type="button">Reset to last 14 days</button>
+          </div>
+
+          <div id="rangeStatus" class="small-note"></div>
         </details>
       </div>
 
@@ -395,6 +386,7 @@
           <div>
             <label for="returnTime">Time returned</label>
             <input id="returnTime" type="time" step="300" />
+            <div class="note">Required for calculation.</div>
           </div>
           <div>
             <label for="baseRate">Base hourly rate (£)</label>
@@ -417,6 +409,7 @@
           <button id="calcBtn" class="primary" type="button">Calculate</button>
           <button id="addRowBtn" type="button">Add results to table</button>
         </div>
+        <div id="calcStatus" class="small-note"></div>
       </div>
 
       <!-- STEP 3 – Results -->
@@ -450,7 +443,9 @@
       <!-- STEP 4 – Log & export -->
       <div class="section">
         <div class="section-title">Step 4 – Log & export</div>
-        <h2 id="logHeader">LOG <span id="logCount" class="badge">0 entries</span></h2>
+        <h2 style="margin:8px 0 8px;font-size:18px;display:flex;align-items:center;gap:8px;">
+          LOG <span id="logCount" class="badge">0 entries</span>
+        </h2>
 
         <div id="logBox" class="logbox">
           <table id="logTable">
@@ -466,7 +461,6 @@
                 <th>OT Due</th>
               </tr>
             </thead>
-
             <tbody id="logBody">
               <tr id="placeholderRow">
                 <td colspan="8" class="note">No entries yet — add one above.</td>
@@ -475,599 +469,966 @@
           </table>
 
           <div class="btnrow">
-            <button id="exportDoc" class="primary" type="button">Export Word (.docx)</button>
-            <button id="exportPdf" type="button">Export PDF</button>
+            <!-- Export Word removed (THIS TOOL ONLY) -->
+            <button id="exportPdf" class="primary" type="button">Export PDF</button>
             <button id="clearLog" class="danger" type="button">Clear table</button>
           </div>
         </div>
 
         <p class="note" style="margin-top:12px;">
-          Authorisation signature appears on exported documents only.
+          Authorisation signature appears on exported PDF only.
         </p>
+      </div>
+
+      <!-- OpenAI status (template standard) -->
+      <div class="section">
+        <div class="section-title">OpenAI integration status</div>
+        <div id="openAiStatus" class="small-note">
+          This tool doesn’t use OpenAI by default, but the shared key + AI Debugger are included for consistency.
+        </div>
       </div>
     </div>
 
-    <!-- Global debug panel -->
+    <!-- Debug panel (hidden by default) -->
     <details class="debug">
       <summary>Debug panel</summary>
       <pre id="debugLog">(empty)</pre>
     </details>
 
-    <!-- Calendar settings -->
+    <!-- Calendar settings (hidden by default) -->
     <details class="calendar-settings">
-      <summary>Calendar settings (Calendar ID)</summary>
-      <div class="small-note">Normally leave this unchanged.</div>
-      <div style="max-width:460px;margin-top:6px;">
-        <label for="calendarId">Calendar ID</label>
-        <input id="calendarId"
-               value="bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com" />
+      <summary>Calendar settings (Calendar ID / Advanced)</summary>
+      <div class="small-note" style="margin-top:4px;">
+        Advanced: change which Google Calendar this tool reads from. Usually leave as-is.
+      </div>
+
+      <div class="grid" style="margin-top:8px;max-width:920px;">
+        <div>
+          <label for="calendarId">Calendar ID</label>
+          <input id="calendarId"
+                 value="bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com" />
+          <div class="small-note">Shared calendar used in other AVD tools.</div>
+        </div>
+        <div>
+          <label for="employeeName">Employee</label>
+          <input id="employeeName" value="Frazer" />
+          <div class="small-note">Derived from calendar ID when possible; defaults to Frazer.</div>
+        </div>
       </div>
     </details>
 
-    <!-- API KEY PANEL -->
+    <!-- API key panel (hidden by default) -->
     <details class="api">
-      <summary>API key (OpenAI)</summary>
+      <summary>API key (OpenAI) – hidden by default</summary>
       <div class="small-note" style="margin-top:4px;">
-        Stored locally in <code>localStorage['avd_job_report_openai_key']</code>.
+        Stored locally in <code>localStorage['avd_job_report_openai_key']</code>. Not sent anywhere except OpenAI’s API.
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
-        <input id="apiKeyInput" type="password" placeholder="sk-…" style="flex:1 1 220px;max-width:380px;" />
+      <div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+        <input id="apiKeyInput" type="password" placeholder="sk-..." style="flex:1 1 220px;max-width:380px;" />
         <button type="button" id="saveApiKeyBtn">Save</button>
         <button type="button" id="clearApiKeyBtn">Forget</button>
+        <button type="button" id="testOpenAiBtn">Test OpenAI call</button>
       </div>
       <div id="apiKeyStatus" class="small-note"></div>
     </details>
+
+    <!-- AI Debugger (Be Strict) -->
+    <details class="ai-debugger">
+      <summary>AI Debugger (Be Strict) – Jobs/Reports prompt tester</summary>
+      <div class="small-note" style="margin-top:4px;">
+        Use this to test “Jobs/Reports” prompt wording + model behaviour on the same shared key.
+      </div>
+
+      <div class="grid" style="margin-top:8px;">
+        <div>
+          <label for="aiModel">Model</label>
+          <select id="aiModel"></select>
+          <div class="small-note">Includes gpt-5.2 + sensible fallbacks.</div>
+        </div>
+        <div>
+          <label for="aiTemperature">Temperature</label>
+          <input id="aiTemperature" inputmode="decimal" value="0.2" />
+          <div class="small-note">Lower = more consistent.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px;">
+        <label for="aiSystemPrompt">System prompt (Jobs/Reports)</label>
+        <textarea id="aiSystemPrompt" rows="6"></textarea>
+      </div>
+
+      <div style="margin-top:8px;">
+        <label for="aiUserInput">User input</label>
+        <textarea id="aiUserInput" rows="6" placeholder="Paste a job/report snippet here to test…"></textarea>
+      </div>
+
+      <div class="btnrow">
+        <button id="runAiDebuggerBtn" class="primary" type="button">Run AI Debugger</button>
+        <button id="copyAiOutputBtn" type="button">Copy output</button>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label for="aiOutput">AI output</label>
+        <textarea id="aiOutput" rows="8" placeholder="AI output will appear here…"></textarea>
+      </div>
+
+      <div id="aiDebuggerStatus" class="small-note"></div>
+    </details>
+
+    <!-- Replacement index.html output -->
+    <details class="replacement-output">
+      <summary>Replacement index.html output (copy/paste)</summary>
+      <div class="small-note" style="margin-top:4px;">
+        If clipboard fails on iOS, you can copy the full page from here.
+      </div>
+      <div style="margin-top:8px;">
+        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.10) to generate this…"></textarea>
+      </div>
+      <div class="btnrow">
+        <button id="copyReplacementBtn" type="button">Copy this text</button>
+      </div>
+    </details>
   </div>
 
-<script>
-/* ---------- CONSTANTS ---------- */
-const CLIENT_ID = "105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com";
-const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+  <script>
+    // =========================
+    // TOOL METADATA CONSTANTS
+    // =========================
+    const TOOL_NAME = "AVD Overtime Calculator";
+    const TOOL_VERSION = "v0.10";
+    const TOOL_LAST_UPDATED = "2025-12-14";
+    const TOOL_CODE = "OT-CALC";
 
-let accessToken = null;
-let tokenClient = null;
+    // =========================
+    // CONFIG / SHARED CONSTANTS
+    // =========================
+    const CLIENT_ID = "105230737516-l8tlnck4idde83pjetrotobpt8borvts.apps.googleusercontent.com";
+    const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+    const OPENAI_KEY_STORAGE = "avd_job_report_openai_key"; // shared across AVD tools
 
-const STORAGE_KEY = "avd_ot_stable_calendar_autofetch_v4_4";
-const OPENAI_KEY_STORAGE = "avd_job_report_openai_key";
+    // OT tool state storage (kept to preserve existing saved logs)
+    const STORAGE_KEY = "avd_ot_stable_calendar_autofetch_v4_4";
 
-const GRACE_END = 9*60;
-const CORE_END = 17*60;
+    // Time rules
+    const GRACE_END = 9*60;
+    const CORE_END  = 17*60;
 
-/* ---------- DEBUG ---------- */
-function logDebug(msg) {
-  const el = document.getElementById("debugLog");
-  if (!el) return;
-  const ts = new Date().toISOString().replace("T"," ").slice(0,19);
-  el.textContent += `[${ts}] ${msg}\n`;
-  el.scrollTop = el.scrollHeight;
-}
+    // OpenAI models (includes gpt-5.2 as requested)
+    const MODEL_CANDIDATES = [
+      "gpt-5.2",
+      "gpt-5.2-mini",
+      "gpt-5.1",
+      "gpt-5.1-mini",
+      "gpt-4.1",
+      "gpt-4.1-mini",
+      "gpt-4o",
+      "gpt-4o-mini"
+    ];
 
-function setStatus(msg, ok) {
-  const el = document.getElementById("authStatus");
-  if (!el) return;
-  el.textContent = "Status: " + msg;
-  el.className = "note";
-  logDebug("AUTH: " + msg);
-}
+    let accessToken = null;
+    let tokenClient = null;
 
-/* ---------- CALENDAR AUTH ---------- */
-function initAuth() {
-  if (!window.google?.accounts?.oauth2) {
-    logDebug("Google auth library not ready.");
-    return;
-  }
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    prompt: "",
-    callback: (resp) => {
-      if (resp?.access_token) {
-        accessToken = resp.access_token;
-        setStatus("Signed in", true);
-        fetchEvents();
+    // Calendar range control
+    let USE_CUSTOM_RANGE = false;
+
+    // ---------- UI init (metadata) ----------
+    function applyToolMetadata() {
+      const setText = (id, txt) => { const el=document.getElementById(id); if(el) el.textContent = txt; };
+      setText("toolNameHeading", TOOL_NAME);
+      setText("toolNameInfo", TOOL_NAME);
+      setText("toolVersionInfo", TOOL_VERSION);
+      setText("toolLastUpdatedInfo", TOOL_LAST_UPDATED);
+      setText("toolCodeInfo", TOOL_CODE);
+      const vBtn = document.getElementById("copyVersionBtn");
+      if (vBtn) vBtn.textContent = TOOL_VERSION;
+    }
+
+    // ---------- DEBUG ----------
+    function logDebug(msg, data) {
+      const el = document.getElementById("debugLog");
+      if (!el) return;
+      const ts = new Date().toISOString().replace("T"," ").slice(0,19);
+      let line = `[${ts}] ${msg}`;
+      if (data !== undefined) {
+        try { line += " " + JSON.stringify(data); }
+        catch { line += " " + String(data); }
+      }
+      el.textContent += line + "\n";
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function setAuthStatus(msg, ok) {
+      const el = document.getElementById("authStatus");
+      if (!el) return;
+      el.textContent = "Status: " + msg;
+      el.className = ok ? "note" : "note danger-text";
+      logDebug("AUTH: " + msg + (ok ? "" : " [ERROR]"));
+    }
+
+    function setCalcStatus(msg, isError) {
+      const el = document.getElementById("calcStatus");
+      if (!el) return;
+      el.textContent = msg || "";
+      el.className = isError ? "small-note danger-text" : "small-note";
+      if (msg) logDebug("CALC: " + msg + (isError ? " [ERROR]" : ""));
+    }
+
+    // ---------- CALENDAR AUTH ----------
+    function initAuth() {
+      if (!window.google?.accounts?.oauth2) {
+        logDebug("Google auth library not ready yet.");
+        return;
+      }
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        prompt: "",
+        callback: (resp) => {
+          logDebug("Google OAuth callback", resp);
+          if (resp?.access_token) {
+            accessToken = resp.access_token;
+            setAuthStatus("Signed in", true);
+          } else {
+            setAuthStatus("Sign-in failed", false);
+          }
+        }
+      });
+      logDebug("Google token client initialised.");
+    }
+
+    function signIn() {
+      if (!tokenClient) initAuth();
+      if (!tokenClient) return setAuthStatus("Auth not ready (try again in a moment)", false);
+      tokenClient.requestAccessToken();
+    }
+
+    // Default is last 14 days (incl. today)
+    function defaultCalendarRange() {
+      const now = new Date();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const start = new Date(end);
+      start.setDate(start.getDate() - 13);
+      const fmt = d => d.toISOString().slice(0,10);
+      return { from: fmt(start), to: fmt(end) };
+    }
+
+    function ensureCalendarRangeInputs() {
+      const fromEl = document.getElementById("fromDate");
+      const toEl = document.getElementById("toDate");
+      if (!fromEl || !toEl) return;
+      const def = defaultCalendarRange();
+      if (!fromEl.value) fromEl.value = def.from;
+      if (!toEl.value) toEl.value = def.to;
+    }
+
+    function timeRangeISO(dateStr, endOfDay) {
+      const [y,m,d] = dateStr.split("-").map(Number);
+      if (endOfDay) return new Date(Date.UTC(y,m-1,d,23,59,59)).toISOString();
+      return new Date(Date.UTC(y,m-1,d,0,0,0)).toISOString();
+    }
+
+    async function fetchEvents() {
+      if (!accessToken) return setAuthStatus("Sign in first", false);
+
+      ensureCalendarRangeInputs();
+
+      let fromStr, toStr;
+
+      if (USE_CUSTOM_RANGE) {
+        fromStr = document.getElementById("fromDate").value;
+        toStr   = document.getElementById("toDate").value;
+        if (!fromStr || !toStr) return setAuthStatus("Pick From/To dates in Advanced range", false);
       } else {
-        setStatus("Sign-in failed", false);
+        const def = defaultCalendarRange();
+        fromStr = def.from;
+        toStr   = def.to;
+        // keep hidden advanced inputs in sync
+        document.getElementById("fromDate").value = fromStr;
+        document.getElementById("toDate").value = toStr;
+      }
+
+      const fromISO = timeRangeISO(fromStr, false);
+      const toISO   = timeRangeISO(toStr, true);
+
+      if (new Date(fromISO) > new Date(toISO)) {
+        return setAuthStatus("From date must be on/before To date", false);
+      }
+
+      const calId = document.getElementById("calendarId").value.trim();
+      const url = new URL("https://www.googleapis.com/calendar/v3/calendars/" + encodeURIComponent(calId) + "/events");
+      url.searchParams.set("singleEvents","true");
+      url.searchParams.set("orderBy","startTime");
+      url.searchParams.set("timeMin", fromISO);
+      url.searchParams.set("timeMax", toISO);
+      url.searchParams.set("maxResults","2500");
+
+      logDebug("Calendar fetch", { range: { fromStr, toStr }, url: url.toString() });
+
+      const res = await fetch(url, { headers:{ Authorization:"Bearer " + accessToken }});
+      if (!res.ok) return setAuthStatus("Calendar API error " + res.status, false);
+      const data = await res.json();
+
+      const items = (data.items||[]).slice().sort((a,b)=>{
+        const aa = a.start?.dateTime || a.start?.date;
+        const bb = b.start?.dateTime || b.start?.date;
+        return new Date(bb) - new Date(aa);
+      });
+
+      const sel = document.getElementById("eventPick");
+      sel.innerHTML = '<option value="">— Select event (optional) —</option>';
+
+      items.forEach(ev=>{
+        const title = ev.summary || "(no title)";
+        const date = ev.start?.date || ev.start?.dateTime?.slice(0,10) || "";
+        const opt = document.createElement("option");
+        opt.value = title;
+        opt.textContent = `${title} — ${date}`;
+        opt.dataset.date = date;
+        sel.appendChild(opt);
+      });
+
+      setAuthStatus("Loaded " + items.length + " events", true);
+    }
+
+    // ---------- DATE FORMAT ----------
+    function toDMY(iso) {
+      if (!iso) return "";
+      const [y,m,d] = iso.split("-");
+      return `${d}-${m}-${y}`;
+    }
+
+    // ---------- CALC ----------
+    function minutesFromHHMM(v) {
+      if (!v) return null;
+      const [hh,mm] = v.split(":").map(Number);
+      if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+      return hh*60 + mm;
+    }
+
+    function fmtHours(mins) {
+      if (mins==null || isNaN(mins)) return "—";
+      const h = Math.floor(mins/60);
+      const m = mins%60;
+      return `${h}h ${String(m).padStart(2,"0")}m`;
+    }
+
+    function fmtMoney(p) {
+      if (p==null || isNaN(p)) return "—";
+      return "£"+p.toFixed(2);
+    }
+
+    function updateDayTypeLabel(full, finish) {
+      const el = document.getElementById("dayTypeLabel");
+      if (!el) return;
+      if (!full && !finish) el.textContent = "Day type: Field day";
+      else if (full) el.textContent = "Day type: Full office/admin day";
+      else el.textContent = "Day type: Office-finish day";
+    }
+
+    function calc() {
+      setCalcStatus("", false);
+
+      const leaveVal = document.getElementById("leaveTime").value || "07:45";
+      const rtVal = document.getElementById("returnTime").value;
+
+      const leaveMin = minutesFromHHMM(leaveVal);
+      let endMin = minutesFromHHMM(rtVal);
+
+      if (leaveMin === null) {
+        setCalcStatus("Invalid leave time.", true);
+        return null;
+      }
+      if (endMin === null) {
+        setCalcStatus("Please enter a return time.", true);
+        return null;
+      }
+
+      if (endMin < leaveMin) endMin += 1440;
+
+      const full = document.getElementById("fullOfficeDay").checked;
+      const finish = !full && document.getElementById("officeFinishDay").checked;
+
+      let effectiveEnd = endMin;
+      if (finish) effectiveEnd = Math.min(endMin, CORE_END);
+
+      const totalWorked = Math.max(0, effectiveEnd - leaveMin);
+
+      let rawPre9=0, rawPost17=0, rawCore=0;
+
+      if (leaveMin < GRACE_END)
+        rawPre9 = Math.max(0, Math.min(effectiveEnd, GRACE_END) - leaveMin);
+
+      if (effectiveEnd > GRACE_END) {
+        rawCore = Math.max(0,
+          Math.min(effectiveEnd, CORE_END) - Math.max(leaveMin, GRACE_END)
+        );
+      }
+
+      if (!finish && effectiveEnd > CORE_END)
+        rawPost17 = Math.max(0, effectiveEnd - CORE_END);
+
+      let pre9OT  = rawPre9;
+      let post17OT = rawPost17;
+
+      if (full) {
+        pre9OT = 0;
+        post17OT = 0;
+      } else if (finish) {
+        pre9OT = Math.max(0, rawPre9 - 15);
+        post17OT = 0;
+      } else {
+        if (pre9OT > 0) pre9OT = Math.max(0, pre9OT - 15);
+        if (post17OT > 0) post17OT = Math.max(0, post17OT - 15);
+      }
+
+      const baseRate = parseFloat((document.getElementById("baseRate").value || "").replace(",", ".")) || 0;
+      const otDue = ((pre9OT + post17OT) / 60) * baseRate;
+
+      document.getElementById("allHours").textContent   = fmtHours(totalWorked);
+      document.getElementById("graceHours").textContent = fmtHours(pre9OT);
+      document.getElementById("coreHours").textContent  = fmtHours(rawCore);
+      document.getElementById("otHours").textContent    = fmtHours(post17OT);
+      document.getElementById("otBase").textContent     = fmtMoney(otDue);
+
+      updateDayTypeLabel(full, finish);
+
+      setCalcStatus("Calculated.", false);
+
+      return {
+        totalWorked,
+        rawTotalOT: rawPre9 + rawPost17,
+        otDue
+      };
+    }
+
+    // ---------- LOG ----------
+    function updateLogCount() {
+      const rows = [...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+      document.getElementById("logCount").textContent =
+        rows.length===1 ? "1 entry" : `${rows.length} entries`;
+    }
+
+    function mkBtn(label, cls) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = cls || "";
+      b.textContent = label;
+      b.style.border = "1px solid var(--border)";
+      b.style.borderRadius = "8px";
+      b.style.padding = "6px 10px";
+      return b;
+    }
+
+    function addPlaceholder() {
+      const tb = document.getElementById("logBody");
+      const tr = document.createElement("tr");
+      tr.id = "placeholderRow";
+      const td = document.createElement("td");
+      td.colSpan = 8;
+      td.className = "note";
+      td.textContent = "No entries yet — add one above.";
+      tr.appendChild(td);
+      tb.appendChild(tr);
+    }
+
+    function addRowFromData(item) {
+      const tbody = document.getElementById("logBody");
+      const tr = document.createElement("tr");
+
+      const tdAct = document.createElement("td");
+      const del = mkBtn("Delete","danger");
+      del.onclick = () => {
+        tr.remove();
+        if (!tbody.querySelector("tr")) addPlaceholder();
+        updateLogCount();
+        saveState();
+      };
+      tdAct.appendChild(del);
+      tr.appendChild(tdAct);
+
+      [
+        item.dateDMY,
+        item.job,
+        item.leaveTime,
+        item.returnTime,
+        item.totalWorked,
+        item.totalOT,
+        item.otDue
+      ].forEach(v => {
+        const td=document.createElement("td");
+        td.textContent=v;
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    }
+
+    function addRow() {
+      const r = calc();
+      if (!r) return;
+
+      const tbody = document.getElementById("logBody");
+      const ph = document.getElementById("placeholderRow");
+      if (ph) ph.remove();
+
+      const isoDate = document.getElementById("date").value;
+      const item = {
+        dateDMY: toDMY(isoDate),
+        job: document.getElementById("jobRef").value || "",
+        leaveTime: document.getElementById("leaveTime").value || "07:45",
+        returnTime: document.getElementById("returnTime").value || "",
+        totalWorked: fmtHours(r.totalWorked),
+        totalOT: fmtHours(r.rawTotalOT),
+        otDue: fmtMoney(r.otDue)
+      };
+
+      addRowFromData(item);
+      updateLogCount();
+      saveState();
+    }
+
+    function serializeLog() {
+      const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+      return rows.map(r=>{
+        return {
+          dateDMY: r.children[1].textContent.trim(),
+          job:     r.children[2].textContent.trim(),
+          leaveTime: r.children[3].textContent.trim(),
+          returnTime: r.children[4].textContent.trim(),
+          totalWorked: r.children[5].textContent.trim(),
+          totalOT: r.children[6].textContent.trim(),
+          otDue: r.children[7].textContent.trim()
+        };
+      });
+    }
+
+    function restoreLog(items) {
+      const tbody=document.getElementById("logBody");
+      tbody.innerHTML="";
+      if (!items?.length) { addPlaceholder(); updateLogCount(); return; }
+      items.forEach(addRowFromData);
+      updateLogCount();
+    }
+
+    function clearLog() {
+      if (!confirm("Clear all log entries?")) return;
+      const tbody=document.getElementById("logBody");
+      tbody.innerHTML="";
+      addPlaceholder();
+      updateLogCount();
+      saveState();
+    }
+
+    // ---------- EXPORT PDF ----------
+    function parseHM(s){
+      if (!s) return 0;
+      const m=s.match(/(\d+)h\s*(\d+)m/i);
+      if (!m) return 0;
+      return parseInt(m[1])*60 + parseInt(m[2]);
+    }
+    function parseMoney(s){
+      if (!s) return 0;
+      const n=s.replace(/[^0-9.\-]/g,"");
+      return parseFloat(n||"0");
+    }
+
+    function buildDocHtmlFromLog(){
+      const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+      let totWorked=0, totOT=0, totDue=0;
+
+      const bodyHtml = rows.map(r=>{
+        const d=r.children[1].textContent.trim();
+        const job=r.children[2].textContent.trim();
+        const left=r.children[3].textContent.trim();
+        const ret=r.children[4].textContent.trim();
+        const tw=r.children[5].textContent.trim();
+        const tot=r.children[6].textContent.trim();
+        const due=r.children[7].textContent.trim();
+
+        totWorked+=parseHM(tw);
+        totOT+=parseHM(tot);
+        totDue+=parseMoney(due);
+
+        return `
+          <tr>
+            <td>${d}</td>
+            <td>${job}</td>
+            <td>${left}</td>
+            <td>${ret}</td>
+            <td class="tc">${tw}</td>
+            <td class="tc">${tot}</td>
+            <td class="tr">${due}</td>
+          </tr>`;
+      }).join("");
+
+      const dates = rows.map(r=>r.children[1].textContent.trim()).filter(Boolean);
+      const first = dates[0] || "";
+      const last  = dates[dates.length-1] || "";
+      const title = `Overtime Logs between ${first} and ${last}`;
+
+      const css = `
+        <style>
+          @page { size: A4 landscape; margin: 1.6cm; }
+          body { font-family: Calibri, Arial, sans-serif; font-size: 12pt; }
+          h1 { font-size: 18pt; margin: 0 0 8pt 0; }
+          h2 { font-size: 14pt; margin-top: 20pt; }
+          table { border-collapse: collapse; width: 100%; margin-top: 12pt; }
+          th, td {
+            border: 1px solid #ccc;
+            padding: 6pt;
+            vertical-align: top;
+          }
+          th { background: #efefef; font-weight: bold; }
+          .tc { text-align: center; }
+          .tr { text-align: right; }
+          .totals td { background: #f7f7f7; }
+          ul { margin: 6pt 0 12pt 24pt; padding: 0; }
+        </style>
+      `;
+
+      const totalsRow = rows.length ? `
+        <tr class="totals">
+          <td></td><td><b>Totals</b></td><td></td><td></td>
+          <td class="tc"><b>${fmtHours(totWorked)}</b></td>
+          <td class="tc"><b>${fmtHours(totOT)}</b></td>
+          <td class="tr"><b>£${totDue.toFixed(2)}</b></td>
+        </tr>` : "";
+
+      const employee = (document.getElementById("employeeName").value || "Frazer").trim();
+
+      return `
+        <!doctype html>
+        <html>
+        <head><meta charset="utf-8">${css}<title>${title}</title></head>
+        <body>
+          <h1>${title}</h1>
+          <p><b>Employee:</b> ${employee}</p>
+
+          <h2>How the calculations work</h2>
+          <ul>
+            <li>Time before 09:00 and after 17:00 counts as overtime, based on recorded leave and return times.</li>
+            <li>On field days, 15 minutes is deducted from pre-09:00 overtime and 15 minutes from post-17:00 overtime.</li>
+            <li>On office-finish days, pre-09:00 overtime (after a 15 minute deduction) is kept, but there is no overtime after 17:00.</li>
+            <li>Overtime is shown at the base rate (e.g. £15.70/hr).</li>
+          </ul>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Job / Location</th>
+                <th>Time left</th>
+                <th>Time returned</th>
+                <th>Total worked</th>
+                <th>Total overtime</th>
+                <th>OT Due</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bodyHtml || '<tr><td colspan="7">No entries</td></tr>'}
+              ${totalsRow}
+            </tbody>
+          </table>
+
+          <h2>Authorisation</h2>
+          <p><b>Authorised by:</b> _____________________<br>
+          <b>Date:</b> _____________________</p>
+        </body>
+        </html>
+      `;
+    }
+
+    function exportPdf(){
+      const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
+      if (!rows.length) return alert("No rows to export.");
+      const html=buildDocHtmlFromLog();
+      const w=window.open("");
+      w.document.write(html);
+      w.document.close();
+      w.onload = ()=>setTimeout(()=>w.print(),250);
+    }
+
+    // ---------- API KEY PANEL ----------
+    function refreshApiKeyStatus(){
+      const key=localStorage.getItem(OPENAI_KEY_STORAGE);
+      document.getElementById("apiKeyStatus").textContent =
+        key ? "API key stored (shared across AVD tools)." : "No API key stored yet.";
+    }
+    function handleSaveApiKey(){
+      const v=document.getElementById("apiKeyInput").value.trim();
+      if (!v) return alert("Enter key first");
+      localStorage.setItem(OPENAI_KEY_STORAGE,v);
+      document.getElementById("apiKeyInput").value="";
+      refreshApiKeyStatus();
+    }
+    function handleClearApiKey(){
+      localStorage.removeItem(OPENAI_KEY_STORAGE);
+      refreshApiKeyStatus();
+    }
+
+    async function testOpenAiCall(){
+      const key = localStorage.getItem(OPENAI_KEY_STORAGE);
+      if (!key) return alert("No OpenAI key saved yet.");
+      document.getElementById("openAiStatus").textContent = "Testing OpenAI call…";
+      try{
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + key },
+          body: JSON.stringify({
+            model: "gpt-4.1-mini",
+            messages: [
+              { role:"system", content:"You are a concise assistant." },
+              { role:"user", content:"Reply with: OK" }
+            ],
+            temperature: 0
+          })
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(()=> "");
+          logDebug("OpenAI test error body", txt);
+          throw new Error("OpenAI error " + res.status);
+        }
+        const data = await res.json();
+        const out = data?.choices?.[0]?.message?.content?.trim() || "(no content)";
+        document.getElementById("openAiStatus").textContent = "OpenAI test OK: " + out;
+      }catch(e){
+        document.getElementById("openAiStatus").textContent = "OpenAI test failed: " + (e.message || String(e));
       }
     }
-  });
-}
 
-function signIn() {
-  if (!tokenClient) initAuth();
-  if (!tokenClient) return setStatus("Auth not ready", false);
-  tokenClient.requestAccessToken();
-}
+    // ---------- AI Debugger ----------
+    function initAiDebuggerDefaults(){
+      const modelSel = document.getElementById("aiModel");
+      modelSel.innerHTML = "";
+      MODEL_CANDIDATES.forEach(m=>{
+        const opt=document.createElement("option");
+        opt.value=m;
+        opt.textContent=m;
+        modelSel.appendChild(opt);
+      });
+      modelSel.value = MODEL_CANDIDATES[0] || "gpt-4.1-mini";
 
-function timeRangeISO(d) {
-  const [y,m,dd] = d.split("-").map(Number);
-  const start = new Date(Date.UTC(y,m-1,dd,0,0,0));
-  const end   = new Date(Date.UTC(y,m-1,dd,23,59,59));
-  return { timeMin:start.toISOString(), timeMax:end.toISOString() };
-}
+      document.getElementById("aiSystemPrompt").value =
+`You are an AI assistant helping to improve "Jobs/Reports" text for AV engineers.
 
-function spanISO(from,to) {
-  return {
-    timeMin: timeRangeISO(from).timeMin,
-    timeMax: timeRangeISO(to).timeMax
-  };
-}
+Rules (Be Strict):
+- Do not invent facts.
+- Keep all operational details: dates, locations, access, key people, kit models, constraints, risks.
+- Remove waffle and repetition.
+- Output should be clean and ready to paste into a Job/Report.
 
-async function fetchEvents() {
-  if (!accessToken) return setStatus("Sign in first", false);
+Return only the improved text. No commentary.`;
 
-  const calId = document.getElementById("calendarId").value.trim();
+      document.getElementById("aiUserInput").value =
+`Job/Report:
+Arrived on site, customer said projector keeps dropping signal. HDMI run is long. Tested with spare lead. Suspect wall plate or extender. Need revisit with proper tester and spare TX/RX.
+Access: key safe by side door.`;
+    }
 
-  const now = new Date();
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(),23,59,59);
-  const start = new Date(end);
-  start.setDate(start.getDate()-6);
-  start.setHours(0,0,0,0);
+    function setAiDebuggerStatus(msg, isErr){
+      const el=document.getElementById("aiDebuggerStatus");
+      el.textContent = msg || "";
+      el.className = isErr ? "small-note danger-text" : "small-note";
+      if (msg) logDebug("AI-DEBUGGER: " + msg + (isErr ? " [ERROR]" : ""));
+    }
 
-  const fmt = d => d.toISOString().slice(0,10);
-  const fromStr = fmt(start);
-  const toStr   = fmt(end);
+    async function runAiDebugger(){
+      setAiDebuggerStatus("", false);
 
-  document.getElementById("fromDate").value = fromStr;
-  document.getElementById("toDate").value   = toStr;
+      const key = localStorage.getItem(OPENAI_KEY_STORAGE);
+      if (!key) return setAiDebuggerStatus("No OpenAI key stored. Save it in the API key panel first.", true);
 
-  const {timeMin,timeMax} = spanISO(fromStr,toStr);
+      const model = document.getElementById("aiModel").value;
+      const temp  = parseFloat((document.getElementById("aiTemperature").value || "0.2").replace(",", ".")) || 0.2;
+      const systemPrompt = document.getElementById("aiSystemPrompt").value || "";
+      const userInput = document.getElementById("aiUserInput").value || "";
 
-  const url = new URL("https://www.googleapis.com/calendar/v3/calendars/" +
-    encodeURIComponent(calId) + "/events");
-  url.searchParams.set("singleEvents","true");
-  url.searchParams.set("orderBy","startTime");
-  url.searchParams.set("timeMin",timeMin);
-  url.searchParams.set("timeMax",timeMax);
-  url.searchParams.set("maxResults","2500");
+      if (!userInput.trim()) return setAiDebuggerStatus("User input is empty.", true);
 
-  logDebug("fetch: "+url);
+      document.getElementById("runAiDebuggerBtn").disabled = true;
+      setAiDebuggerStatus("Running…", false);
 
-  const res = await fetch(url,{headers:{Authorization:"Bearer "+accessToken}});
-  if (!res.ok) return setStatus("API error "+res.status, false);
-  const data = await res.json();
+      try{
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + key },
+          body: JSON.stringify({
+            model,
+            temperature: temp,
+            messages: [
+              { role:"system", content: systemPrompt },
+              { role:"user", content: userInput }
+            ]
+          })
+        });
 
-  const sel = document.getElementById("eventPick");
-  sel.innerHTML = '<option value="">— Select recent event (optional) —</option>';
+        if (!res.ok) {
+          const txt = await res.text().catch(()=> "");
+          logDebug("AI Debugger OpenAI error body", txt);
+          throw new Error("OpenAI error " + res.status);
+        }
 
-  const items = (data.items||[]).slice().sort((a,b)=>{
-    const aa = a.start?.dateTime || a.start?.date;
-    const bb = b.start?.dateTime || b.start?.date;
-    return new Date(bb) - new Date(aa);
-  });
-
-  items.forEach(ev=>{
-    const title = ev.summary || "(no title)";
-    const date = ev.start.date || ev.start.dateTime?.slice(0,10) || "";
-    const opt = document.createElement("option");
-    opt.value = title;
-    opt.textContent = `${title} — ${date}`;
-    opt.dataset.date = date;
-    sel.appendChild(opt);
-  });
-
-  setStatus("Loaded "+items.length+" events", true);
-}
-
-/* ---------- DATE FORMAT CONVERSION ---------- */
-function toDMY(iso) {
-  if (!iso) return "";
-  const [y,m,d] = iso.split("-");
-  return `${d}-${m}-${y}`;
-}
-
-/* ---------- CALCULATION ---------- */
-function minutesFromHHMM(v) {
-  if (!v) return null;
-  const [hh,mm] = v.split(":").map(Number);
-  return hh*60 + mm;
-}
-
-function fmtHours(mins) {
-  if (mins==null || isNaN(mins)) return "—";
-  const h = Math.floor(mins/60);
-  const m = mins%60;
-  return `${h}h ${String(m).padStart(2,"0")}m`;
-}
-
-function fmtMoney(p) {
-  if (p==null || isNaN(p)) return "—";
-  return "£"+p.toFixed(2);
-}
-
-function updateDayTypeLabel(full,finish) {
-  const el = document.getElementById("dayTypeLabel");
-  if (!full && !finish) el.textContent = "Day type: Field day";
-  else if (full) el.textContent = "Day type: Full office/admin day";
-  else el.textContent = "Day type: Office-finish day";
-}
-
-function calc() {
-  const leaveVal = document.getElementById("leaveTime").value || "07:45";
-  let leaveMin = minutesFromHHMM(leaveVal);
-  const rtVal = document.getElementById("returnTime").value;
-  let endMin  = minutesFromHHMM(rtVal);
-
-  if (endMin < leaveMin) endMin += 1440;
-
-  const full = document.getElementById("fullOfficeDay").checked;
-  const finish = !full && document.getElementById("officeFinishDay").checked;
-
-  let effectiveEnd = endMin;
-  if (finish) effectiveEnd = Math.min(endMin, CORE_END);
-
-  const totalWorked = Math.max(0, effectiveEnd - leaveMin);
-
-  let rawPre9=0, rawPost17=0, rawCore=0;
-
-  if (leaveMin < GRACE_END)
-    rawPre9 = Math.max(0, Math.min(effectiveEnd,GRACE_END) - leaveMin);
-
-  if (effectiveEnd > GRACE_END) {
-    rawCore = Math.max(0,
-      Math.min(effectiveEnd,CORE_END) - Math.max(leaveMin,GRACE_END)
-    );
-  }
-
-  if (!finish && effectiveEnd > CORE_END)
-    rawPost17 = Math.max(0, effectiveEnd - CORE_END);
-
-  let pre9OT  = rawPre9;
-  let post17OT = rawPost17;
-
-  if (full) {
-    pre9OT = 0;
-    post17OT = 0;
-  } else if (finish) {
-    pre9OT = Math.max(0, rawPre9 - 15);
-    post17OT = 0;
-  } else {
-    if (pre9OT>0) pre9OT = Math.max(0, pre9OT-15);
-    if (post17OT>0) post17OT = Math.max(0, post17OT-15);
-  }
-
-  const baseRate = parseFloat(document.getElementById("baseRate").value.replace(",",".")) || 0;
-  const otDue = ((pre9OT+post17OT)/60)*baseRate;
-
-  document.getElementById("allHours").textContent = fmtHours(totalWorked);
-  document.getElementById("graceHours").textContent = fmtHours(pre9OT);
-  document.getElementById("coreHours").textContent  = fmtHours(rawCore);
-  document.getElementById("otHours").textContent    = fmtHours(post17OT);
-  document.getElementById("otBase").textContent     = fmtMoney(otDue);
-
-  updateDayTypeLabel(full,finish);
-
-  return {
-    totalWorked,
-    rawTotalOT: rawPre9 + rawPost17,
-    otDue
-  };
-}
-
-/* ---------- LOG HANDLING ---------- */
-function updateLogCount() {
-  const rows = [...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
-  document.getElementById("logCount").textContent =
-    rows.length===1 ? "1 entry" : `${rows.length} entries`;
-}
-
-function mkBtn(label, cls) {
-  const b=document.createElement("button");
-  b.type="button";
-  b.className=cls||"";
-  b.textContent=label;
-  b.style.border="1px solid var(--border)";
-  b.style.borderRadius="8px";
-  b.style.padding="6px 10px";
-  return b;
-}
-
-function addPlaceholder() {
-  const tb=document.getElementById("logBody");
-  const tr=document.createElement("tr");
-  tr.id="placeholderRow";
-  const td=document.createElement("td");
-  td.colSpan=8;
-  td.className="note";
-  td.textContent="No entries yet — add one above.";
-  tr.appendChild(td);
-  tb.appendChild(tr);
-}
-
-function addRowFromData(item) {
-  const tbody=document.getElementById("logBody");
-  const tr=document.createElement("tr");
-
-  const tdAct=document.createElement("td");
-  const del=mkBtn("Delete","danger");
-  del.onclick=()=>{
-    tr.remove();
-    if (!tbody.querySelector("tr")) addPlaceholder();
-    updateLogCount();
-    saveState();
-  };
-  tdAct.appendChild(del);
-  tr.appendChild(tdAct);
-
-  [
-    item.dateDMY,
-    item.job,
-    item.leaveTime,
-    item.returnTime,
-    item.totalWorked,
-    item.totalOT,
-    item.otDue
-  ].forEach(v=>{
-    const td=document.createElement("td");
-    td.textContent=v;
-    tr.appendChild(td);
-  });
-
-  tbody.appendChild(tr);
-}
-
-function addRow() {
-  const r = calc();
-  const tbody=document.getElementById("logBody");
-  const ph=document.getElementById("placeholderRow");
-  if (ph) ph.remove();
-
-  const isoDate = document.getElementById("date").value;
-  const item = {
-    dateDMY: toDMY(isoDate),
-    job: document.getElementById("jobRef").value || "",
-    leaveTime: document.getElementById("leaveTime").value || "",
-    returnTime: document.getElementById("returnTime").value || "",
-    totalWorked: fmtHours(r.totalWorked),
-    totalOT: fmtHours(r.rawTotalOT),
-    otDue: fmtMoney(r.otDue)
-  };
-
-  addRowFromData(item);
-  updateLogCount();
-  saveState();
-}
-
-function serializeLog() {
-  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
-  return rows.map(r=>{
-    return {
-      dateDMY: r.children[1].textContent.trim(),
-      job:     r.children[2].textContent.trim(),
-      leaveTime: r.children[3].textContent.trim(),
-      returnTime: r.children[4].textContent.trim(),
-      totalWorked: r.children[5].textContent.trim(),
-      totalOT: r.children[6].textContent.trim(),
-      otDue: r.children[7].textContent.trim()
-    };
-  });
-}
-
-function restoreLog(items) {
-  const tbody=document.getElementById("logBody");
-  tbody.innerHTML="";
-  if (!items?.length) { addPlaceholder(); updateLogCount(); return; }
-  items.forEach(addRowFromData);
-  updateLogCount();
-}
-
-function clearLog() {
-  if (!confirm("Clear all log entries?")) return;
-  const tbody=document.getElementById("logBody");
-  tbody.innerHTML="";
-  addPlaceholder();
-  updateLogCount();
-  saveState();
-}
-
-/* ---------- EXPORT (WORD + PDF) ---------- */
-function parseHM(s){
-  if (!s) return 0;
-  const m=s.match(/(\d+)h\s*(\d+)m/i);
-  if (!m) return 0;
-  return parseInt(m[1])*60 + parseInt(m[2]);
-}
-function parseMoney(s){
-  if (!s) return 0;
-  const n=s.replace(/[^0-9.\-]/g,"");
-  return parseFloat(n||"0");
-}
-function buildDocHtmlFromLog(){
-  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
-  let totWorked=0, totOT=0, totDue=0;
-
-  const bodyHtml = rows.map(r=>{
-    const d=r.children[1].textContent.trim();
-    const job=r.children[2].textContent.trim();
-    const left=r.children[3].textContent.trim();
-    const ret=r.children[4].textContent.trim();
-    const tw=r.children[5].textContent.trim();
-    const tot=r.children[6].textContent.trim();
-    const due=r.children[7].textContent.trim();
-
-    totWorked+=parseHM(tw);
-    totOT+=parseHM(tot);
-    totDue+=parseMoney(due);
-
-    return `
-      <tr>
-        <td>${d}</td>
-        <td>${job}</td>
-        <td>${left}</td>
-        <td>${ret}</td>
-        <td class="tc">${tw}</td>
-        <td class="tc">${tot}</td>
-        <td class="tr">${due}</td>
-      </tr>`;
-  }).join("");
-
-  const dates = rows.map(r=>r.children[1].textContent.trim()).filter(Boolean);
-  const first = dates[0] || "";
-  const last  = dates[dates.length-1] || "";
-
-  const title = `Overtime Logs between ${first} and ${last}`;
-
-  const css = `
-    <style>
-      @page { size: A4 landscape; margin: 1.6cm; }
-      body { font-family: Calibri, Arial, sans-serif; font-size: 12pt; }
-      h1 { font-size: 18pt; margin: 0 0 8pt 0; }
-      h2 { font-size: 14pt; margin-top: 20pt; }
-      table { border-collapse: collapse; width: 100%; margin-top: 12pt; }
-      th, td {
-        border: 1px solid #ccc;
-        padding: 6pt;
-        vertical-align: top;
+        const data = await res.json();
+        const out = data?.choices?.[0]?.message?.content || "";
+        if (!out.trim()) throw new Error("Empty response from model.");
+        document.getElementById("aiOutput").value = out;
+        setAiDebuggerStatus("Done.", false);
+      }catch(e){
+        setAiDebuggerStatus(e.message || String(e), true);
+      }finally{
+        document.getElementById("runAiDebuggerBtn").disabled = false;
       }
-      th { background: #efefef; font-weight: bold; }
-      .tc { text-align: center; }
-      .tr { text-align: right; }
-      .totals td { background: #f7f7f7; }
-      ul { margin: 6pt 0 12pt 24pt; padding: 0; }
-    </style>
-  `;
+    }
 
-  const totalsRow = rows.length ? `
-    <tr class="totals">
-      <td></td><td><b>Totals</b></td><td></td><td></td>
-      <td class="tc"><b>${fmtHours(totWorked)}</b></td>
-      <td class="tc"><b>${fmtHours(totOT)}</b></td>
-      <td class="tr"><b>£${totDue.toFixed(2)}</b></td>
-    </tr>` : "";
+    async function copyTextFrom(id){
+      const txt = (document.getElementById(id).value || "").trim();
+      if (!txt) return alert("Nothing to copy.");
+      try { await navigator.clipboard.writeText(txt); alert("Copied."); }
+      catch { alert("Copy failed. Select and copy manually."); }
+    }
 
-  return `
-    <!doctype html>
-    <html>
-    <head><meta charset="utf-8">${css}<title>${title}</title></head>
-    <body>
-      <h1>${title}</h1>
+    // ---------- Copy full index.html ----------
+    async function getIndexHtmlSource() {
+      const request = new Request("index.html", { cache: "no-cache" });
+      try {
+        const res = await fetch(request);
+        if (!res.ok) throw new Error("Failed to fetch index.html (" + res.status + ")");
+        return await res.text();
+      } catch (e) {
+        const dt = document.doctype;
+        const doctype = dt
+          ? "<!DOCTYPE " + dt.name + (dt.publicId ? " PUBLIC \"" + dt.publicId + "\"" : "") +
+            (dt.systemId ? " \"" + dt.systemId + "\"" : "") + ">\n"
+          : "<!DOCTYPE html>\n";
+        return doctype + document.documentElement.outerHTML;
+      }
+    }
 
-      <h2>How the calculations work</h2>
-      <ul>
-        <li>Time before 09:00 and after 17:00 counts as overtime, based on recorded leave and return times.</li>
-        <li>On field days, 15 minutes is deducted from pre-09:00 overtime and 15 minutes from post-17:00 overtime.</li>
-        <li>On office-finish days, pre-09:00 overtime (after a 15 minute deduction) is kept, but there is no overtime after 17:00.</li>
-        <li>Overtime is shown at the base rate (e.g. £15.70/hr).</li>
-      </ul>
+    async function copyFullPageHtml() {
+      const htmlString = await getIndexHtmlSource();
+      const repl = document.getElementById("replacementIndexOutput");
+      if (repl) repl.value = htmlString;
 
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Job / Location</th>
-            <th>Time left</th>
-            <th>Time returned</th>
-            <th>Total worked</th>
-            <th>Total overtime</th>
-            <th>OT Due</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${bodyHtml || '<tr><td colspan="7">No entries</td></tr>'}
-          ${totalsRow}
-        </tbody>
-      </table>
+      try {
+        if (navigator.clipboard && typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+          const plainBlob = new Blob([htmlString], { type: "text/plain" });
+          const htmlBlob  = new Blob([htmlString], { type: "text/html" });
+          await navigator.clipboard.write([ new ClipboardItem({ "text/plain": plainBlob, "text/html": htmlBlob }) ]);
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(htmlString);
+        } else {
+          throw new Error("Clipboard API unavailable");
+        }
+        alert("Full index.html copied to clipboard.");
+      } catch (e) {
+        alert("Could not copy automatically. Use the 'Replacement index.html output' panel to copy manually.");
+      }
+    }
 
-      <h2>Authorisation</h2>
-      <p><b>Authorised by:</b> _____________________<br>
-      <b>Date:</b> _____________________</p>
-    </body>
-    </html>
-  `;
-}
+    // ---------- State ----------
+    function saveState(){
+      const data={
+        log: serializeLog(),
+        baseRate: document.getElementById("baseRate").value,
+        calendarId: document.getElementById("calendarId").value,
+        employeeName: (document.getElementById("employeeName").value || "Frazer").trim()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
 
-function exportWord(){
-  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
-  if (!rows.length) return alert("No rows to export.");
-  const html=buildDocHtmlFromLog();
+    function loadState(){
+      const raw=localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      let data=null;
+      try { data=JSON.parse(raw); } catch { return; }
 
-  const blob = new Blob([html], {
-    type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  });
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="overtime_logs.docx";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>{
-    a.remove();
-    URL.revokeObjectURL(url);
-  },0);
-}
+      document.getElementById("baseRate").value = data.baseRate || "15.70";
+      document.getElementById("calendarId").value = data.calendarId ||
+        "bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com";
+      document.getElementById("employeeName").value = data.employeeName || "Frazer";
 
-function exportPdf(){
-  const rows=[...document.querySelectorAll("#logBody tr")].filter(r=>!r.id);
-  if (!rows.length) return alert("No rows to export.");
-  const html=buildDocHtmlFromLog();
-  const w=window.open("");
-  w.document.write(html);
-  w.document.close();
-  w.onload = ()=>setTimeout(()=>w.print(),250);
-}
+      if (Array.isArray(data.log)) restoreLog(data.log);
+    }
 
-/* ---------- API KEY PANEL ---------- */
-function refreshApiKeyStatus(){
-  const key=localStorage.getItem(OPENAI_KEY_STORAGE);
-  document.getElementById("apiKeyStatus").textContent =
-    key ? "API key stored." : "No API key stored.";
-}
-function handleSaveApiKey(){
-  const v=document.getElementById("apiKeyInput").value.trim();
-  if (!v) return alert("Enter key first");
-  localStorage.setItem(OPENAI_KEY_STORAGE,v);
-  document.getElementById("apiKeyInput").value="";
-  refreshApiKeyStatus();
-}
-function handleClearApiKey(){
-  localStorage.removeItem(OPENAI_KEY_STORAGE);
-  refreshApiKeyStatus();
-}
+    // ---------- INIT ----------
+    window.addEventListener("DOMContentLoaded", () => {
+      applyToolMetadata();
+      logDebug("DOMContentLoaded");
 
-/* ---------- INIT ---------- */
-window.addEventListener("DOMContentLoaded",()=>{
-  logDebug("DOMContentLoaded");
+      ensureCalendarRangeInputs();
+      initAuth(); // init early; still safe if google lib not ready
 
-  document.getElementById("signin").onclick = signIn;
-  document.getElementById("fetchEvents").onclick = fetchEvents;
-  document.getElementById("useSel").onclick = ()=>{
-    const opt=document.getElementById("eventPick").selectedOptions[0];
-    if (!opt) return;
-    if (opt.textContent) document.getElementById("jobRef").value = opt.textContent.split(" — ")[0].trim();
-    if (opt.dataset.date) document.getElementById("date").value = opt.dataset.date;
-  };
+      // default range status text (even though advanced is hidden)
+      const def = defaultCalendarRange();
+      const rs = document.getElementById("rangeStatus");
+      if (rs) rs.textContent = `Using default range: last 14 days (${def.from} → ${def.to})`;
 
-  document.getElementById("calcBtn").onclick = calc;
-  document.getElementById("addRowBtn").onclick = addRow;
-  document.getElementById("clearLog").onclick = clearLog;
-  document.getElementById("exportDoc").onclick = exportWord;
-  document.getElementById("exportPdf").onclick = exportPdf;
+      document.getElementById("signin").onclick = signIn;
+      document.getElementById("fetchEvents").onclick = fetchEvents;
 
-  document.getElementById("saveApiKeyBtn").onclick = handleSaveApiKey;
-  document.getElementById("clearApiKeyBtn").onclick = handleClearApiKey;
-  refreshApiKeyStatus();
+      // Advanced range controls (still wired even if hidden)
+      const applyBtn = document.getElementById("applyRangeBtn");
+      const resetBtn = document.getElementById("resetRangeBtn");
 
-  loadState();
-  updateDayTypeLabel(false,false);
-});
+      if (applyBtn) applyBtn.onclick = () => {
+        ensureCalendarRangeInputs();
+        USE_CUSTOM_RANGE = true;
+        const fromStr = document.getElementById("fromDate").value;
+        const toStr = document.getElementById("toDate").value;
+        const rs2 = document.getElementById("rangeStatus");
+        if (rs2) rs2.textContent = `Using custom range: ${fromStr} → ${toStr}`;
+        logDebug("Custom calendar range applied", { fromStr, toStr });
+      };
 
-function saveState(){
-  const data={
-    log: serializeLog(),
-    baseRate: document.getElementById("baseRate").value,
-    calendarId: document.getElementById("calendarId").value
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+      if (resetBtn) resetBtn.onclick = () => {
+        USE_CUSTOM_RANGE = false;
+        const d = defaultCalendarRange();
+        document.getElementById("fromDate").value = d.from;
+        document.getElementById("toDate").value = d.to;
+        const rs3 = document.getElementById("rangeStatus");
+        if (rs3) rs3.textContent = `Using default range: last 14 days (${d.from} → ${d.to})`;
+        logDebug("Calendar range reset to default (last 14 days)", d);
+      };
 
-function loadState(){
-  const raw=localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
-  const data=JSON.parse(raw);
-  document.getElementById("baseRate").value = data.baseRate || "15.70";
-  document.getElementById("calendarId").value = data.calendarId ||
-    "bb14db72acb2ffd4230316960d02103fa66e54901522ff7b8113eec682f6d42e@group.calendar.google.com";
-  if (Array.isArray(data.log)) restoreLog(data.log);
-}
-</script>
+      document.getElementById("useSel").onclick = () => {
+        const opt=document.getElementById("eventPick").selectedOptions[0];
+        if (!opt) return;
+        if (opt.textContent) document.getElementById("jobRef").value = opt.textContent.split(" — ")[0].trim();
+        if (opt.dataset.date) document.getElementById("date").value = opt.dataset.date;
+      };
+
+      document.getElementById("calcBtn").onclick = calc;
+      document.getElementById("addRowBtn").onclick = addRow;
+      document.getElementById("clearLog").onclick = clearLog;
+      document.getElementById("exportPdf").onclick = exportPdf;
+
+      // Version pill copy
+      document.getElementById("copyVersionBtn").onclick = copyFullPageHtml;
+
+      // API panel
+      document.getElementById("saveApiKeyBtn").onclick = handleSaveApiKey;
+      document.getElementById("clearApiKeyBtn").onclick = handleClearApiKey;
+      document.getElementById("testOpenAiBtn").onclick = testOpenAiCall;
+      refreshApiKeyStatus();
+
+      // AI Debugger
+      initAiDebuggerDefaults();
+      document.getElementById("runAiDebuggerBtn").onclick = runAiDebugger;
+      document.getElementById("copyAiOutputBtn").onclick = () => copyTextFrom("aiOutput");
+
+      // Replacement output copy
+      document.getElementById("copyReplacementBtn").onclick = () => copyTextFrom("replacementIndexOutput");
+
+      // Load persisted tool state
+      loadState();
+      updateDayTypeLabel(false,false);
+
+      // Persist calendarId/employee when changed
+      document.getElementById("calendarId").addEventListener("change", saveState);
+      document.getElementById("employeeName").addEventListener("change", saveState);
+
+      setAuthStatus("Not signed in", true);
+    });
+  </script>
 </body>
 </html>
