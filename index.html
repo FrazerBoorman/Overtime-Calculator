@@ -214,7 +214,7 @@
       details.tool-info { background:#f3f4f6; }
     }
 
-    /* HIDE advanced date range section by default (still available) */
+    /* Hidden by default; revealed via Step 1 toggle button */
     details.calendar-range { display:none; }
 
     details.debug summary,
@@ -276,7 +276,7 @@
             <span id="toolNameHeading">AVD Overtime Calculator</span>
             <button id="copyVersionBtn" class="version-btn" type="button"
                     title="Copy full index.html to clipboard"
-                    aria-label="Copy full index.html to clipboard">v0.10</button>
+                    aria-label="Copy full index.html to clipboard">v0.11</button>
           </h1>
           <div class="muted" id="toolShortDescription">
             Daily overtime calculator with optional Google Calendar event picker.
@@ -298,11 +298,11 @@
               </div>
               <div>
                 <div class="tool-info-item-label">Version</div>
-                <div class="tool-info-item-value" id="toolVersionInfo">v0.10</div>
+                <div class="tool-info-item-value" id="toolVersionInfo">v0.11</div>
               </div>
               <div>
                 <div class="tool-info-item-label">Last updated</div>
-                <div class="tool-info-item-value" id="toolLastUpdatedInfo">2025-12-14</div>
+                <div class="tool-info-item-value" id="toolLastUpdatedInfo">2025-12-20</div>
               </div>
               <div>
                 <div class="tool-info-item-label">Tool code</div>
@@ -317,13 +317,13 @@
         </details>
       </div>
 
-      <!-- STEP 1 – Calendar (From/To hidden; loads last 14 days by default) -->
+      <!-- STEP 1 – Calendar -->
       <div class="section">
         <div class="section-title">Step 1 – (Optional) Load events from Google Calendar</div>
 
         <div class="btnrow">
           <button id="signin" class="primary" type="button">Sign in to Google</button>
-          <button id="fetchEvents" type="button">Load last 14 days (incl. today)</button>
+          <!-- Load last 14 days button removed (auto-load after sign-in) -->
         </div>
         <div id="authStatus" class="note">Status: Not signed in</div>
 
@@ -335,12 +335,17 @@
             </select>
           </div>
           <div style="align-self:end;">
-            <button id="useSel" type="button">Use selected event</button>
-            <div class="note">Auto-fills the Date + Job/Location.</div>
+            <!-- Use Selected Event button removed (auto-select + auto-apply after load) -->
+            <div class="note">Auto-fills the Date + Job/Location from the most recent event.</div>
           </div>
         </div>
 
-        <!-- Advanced date range (hidden by default; still available) -->
+        <!-- Advanced toggle (reveals the details section below) -->
+        <div class="btnrow" style="margin-top:10px;">
+          <button id="toggleAdvancedRange" type="button">Advanced Date Range</button>
+        </div>
+
+        <!-- Advanced date range (hidden by default; revealable) -->
         <details class="calendar-range" id="advancedRangeDetails">
           <summary>Advanced: custom calendar date range</summary>
 
@@ -469,7 +474,6 @@
           </table>
 
           <div class="btnrow">
-            <!-- Export Word removed (THIS TOOL ONLY) -->
             <button id="exportPdf" class="primary" type="button">Export PDF</button>
             <button id="clearLog" class="danger" type="button">Clear table</button>
           </div>
@@ -582,7 +586,7 @@
         If clipboard fails on iOS, you can copy the full page from here.
       </div>
       <div style="margin-top:8px;">
-        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.10) to generate this…"></textarea>
+        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.11) to generate this…"></textarea>
       </div>
       <div class="btnrow">
         <button id="copyReplacementBtn" type="button">Copy this text</button>
@@ -595,8 +599,8 @@
     // TOOL METADATA CONSTANTS
     // =========================
     const TOOL_NAME = "AVD Overtime Calculator";
-    const TOOL_VERSION = "v0.10";
-    const TOOL_LAST_UPDATED = "2025-12-14";
+    const TOOL_VERSION = "v0.11";
+    const TOOL_LAST_UPDATED = "2025-12-20";
     const TOOL_CODE = "OT-CALC";
 
     // =========================
@@ -683,11 +687,16 @@
         client_id: CLIENT_ID,
         scope: SCOPES,
         prompt: "",
-        callback: (resp) => {
+        callback: async (resp) => {
           logDebug("Google OAuth callback", resp);
           if (resp?.access_token) {
             accessToken = resp.access_token;
             setAuthStatus("Signed in", true);
+
+            // Auto-load last 14 days after sign-in
+            try { await fetchEvents(); }
+            catch (e) { setAuthStatus("Calendar load failed", false); logDebug("Auto fetchEvents failed", String(e)); }
+
           } else {
             setAuthStatus("Sign-in failed", false);
           }
@@ -727,6 +736,13 @@
       return new Date(Date.UTC(y,m-1,d,0,0,0)).toISOString();
     }
 
+    function useSelectedEvent() {
+      const opt = document.getElementById("eventPick").selectedOptions[0];
+      if (!opt) return;
+      if (opt.textContent) document.getElementById("jobRef").value = opt.textContent.split(" — ")[0].trim();
+      if (opt.dataset.date) document.getElementById("date").value = opt.dataset.date;
+    }
+
     async function fetchEvents() {
       if (!accessToken) return setAuthStatus("Sign in first", false);
 
@@ -742,7 +758,7 @@
         const def = defaultCalendarRange();
         fromStr = def.from;
         toStr   = def.to;
-        // keep hidden advanced inputs in sync
+        // keep advanced inputs in sync
         document.getElementById("fromDate").value = fromStr;
         document.getElementById("toDate").value = toStr;
       }
@@ -788,6 +804,12 @@
       });
 
       setAuthStatus("Loaded " + items.length + " events", true);
+
+      // Auto-select most recent event + auto-apply "Use selected event"
+      if (items.length > 0) {
+        sel.selectedIndex = 1; // first real option after the placeholder
+        useSelectedEvent();
+      }
     }
 
     // ---------- DATE FORMAT ----------
@@ -882,7 +904,10 @@
       }
 
       const baseRate = parseFloat((document.getElementById("baseRate").value || "").replace(",", ".")) || 0;
-      const otDue = ((pre9OT + post17OT) / 60) * baseRate;
+
+      // OT Due uses payable overtime minutes (after deductions)
+      const payableOT = pre9OT + post17OT;
+      const otDue = (payableOT / 60) * baseRate;
 
       document.getElementById("allHours").textContent   = fmtHours(totalWorked);
       document.getElementById("graceHours").textContent = fmtHours(pre9OT);
@@ -896,7 +921,7 @@
 
       return {
         totalWorked,
-        rawTotalOT: rawPre9 + rawPost17,
+        totalOTPayable: payableOT,
         otDue
       };
     }
@@ -978,7 +1003,9 @@
         leaveTime: document.getElementById("leaveTime").value || "07:45",
         returnTime: document.getElementById("returnTime").value || "",
         totalWorked: fmtHours(r.totalWorked),
-        totalOT: fmtHours(r.rawTotalOT),
+        // Total Overtime column now reflects payable OT (after 15m deductions),
+        // which matches the OT Due calculation.
+        totalOT: fmtHours(r.totalOTPayable),
         otDue: fmtMoney(r.otDue)
       };
 
@@ -1107,7 +1134,7 @@
           <h2>How the calculations work</h2>
           <ul>
             <li>Time before 09:00 and after 17:00 counts as overtime, based on recorded leave and return times.</li>
-            <li>On field days, 15 minutes is deducted from pre-09:00 overtime and 15 minutes from post-17:00 overtime.</li>
+            <li><b>Total overtime shown in this report already includes the 15 minute deduction(s)</b> (pre-09:00 and/or post-17:00) so it aligns with <b>OT Due</b>.</li>
             <li>On office-finish days, pre-09:00 overtime (after a 15 minute deduction) is kept, but there is no overtime after 17:00.</li>
             <li>Overtime is shown at the base rate (e.g. £15.70/hr).</li>
           </ul>
@@ -1364,13 +1391,21 @@ Access: key safe by side door.`;
       if (rs) rs.textContent = `Using default range: last 14 days (${def.from} → ${def.to})`;
 
       document.getElementById("signin").onclick = signIn;
-      document.getElementById("fetchEvents").onclick = fetchEvents;
 
-      // Advanced range controls (still wired even if hidden)
+      // Step 1: reveal/hide Advanced Date Range section
+      document.getElementById("toggleAdvancedRange").onclick = () => {
+        const det = document.getElementById("advancedRangeDetails");
+        if (!det) return;
+        const currentlyHidden = (getComputedStyle(det).display === "none");
+        det.style.display = currentlyHidden ? "block" : "none";
+        if (currentlyHidden) det.open = true;
+      };
+
+      // Advanced range controls
       const applyBtn = document.getElementById("applyRangeBtn");
       const resetBtn = document.getElementById("resetRangeBtn");
 
-      if (applyBtn) applyBtn.onclick = () => {
+      if (applyBtn) applyBtn.onclick = async () => {
         ensureCalendarRangeInputs();
         USE_CUSTOM_RANGE = true;
         const fromStr = document.getElementById("fromDate").value;
@@ -1378,9 +1413,12 @@ Access: key safe by side door.`;
         const rs2 = document.getElementById("rangeStatus");
         if (rs2) rs2.textContent = `Using custom range: ${fromStr} → ${toStr}`;
         logDebug("Custom calendar range applied", { fromStr, toStr });
+
+        // Re-fetch immediately so the dropdown updates without extra clicks
+        try { await fetchEvents(); } catch(e) { logDebug("fetchEvents after apply range failed", String(e)); }
       };
 
-      if (resetBtn) resetBtn.onclick = () => {
+      if (resetBtn) resetBtn.onclick = async () => {
         USE_CUSTOM_RANGE = false;
         const d = defaultCalendarRange();
         document.getElementById("fromDate").value = d.from;
@@ -1388,14 +1426,13 @@ Access: key safe by side door.`;
         const rs3 = document.getElementById("rangeStatus");
         if (rs3) rs3.textContent = `Using default range: last 14 days (${d.from} → ${d.to})`;
         logDebug("Calendar range reset to default (last 14 days)", d);
+
+        // Re-fetch immediately so the dropdown updates without extra clicks
+        try { await fetchEvents(); } catch(e) { logDebug("fetchEvents after reset range failed", String(e)); }
       };
 
-      document.getElementById("useSel").onclick = () => {
-        const opt=document.getElementById("eventPick").selectedOptions[0];
-        if (!opt) return;
-        if (opt.textContent) document.getElementById("jobRef").value = opt.textContent.split(" — ")[0].trim();
-        if (opt.dataset.date) document.getElementById("date").value = opt.dataset.date;
-      };
+      // If user manually changes selection, apply immediately
+      document.getElementById("eventPick").addEventListener("change", useSelectedEvent);
 
       document.getElementById("calcBtn").onclick = calc;
       document.getElementById("addRowBtn").onclick = addRow;
