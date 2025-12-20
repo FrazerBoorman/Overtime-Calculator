@@ -1,4 +1,21 @@
 <!doctype html>
+<!--
+  ============================================================
+  CODEX / AUTOMATED-EDIT GUARD RAILS (READ FIRST) — OT-CALC
+  ============================================================
+
+  Primary guidance: read ./CODEX.md before making any edits.
+  (Optional richer doc, if present later): ./context/OT-CALC.md
+
+  If you change anything that affects:
+  - overtime rules, deductions, or checkbox semantics
+  - localStorage keys (OPENAI_KEY_STORAGE, STORAGE_KEY)
+  - calendar OAuth flow / scopes / event ordering / auto-fill behaviour
+  - the Advanced date range disclosure UI pattern
+  ...you must treat it as a deliberate product change, not a refactor.
+
+  This banner is for Codex context only (end users never need to see it).
+-->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -275,7 +292,7 @@
     }
 
     details.calendar-range > summary {
-      list-style: none;
+      list-style:none;
       display:inline-flex;
       align-items:center;
       gap:6px;
@@ -287,11 +304,30 @@
       color:var(--muted);
     }
 
-    /* keep native marker but soften it */
-    details.calendar-range > summary::-webkit-details-marker { opacity:0.75; }
+    /* Remove native marker so we can provide a consistent one everywhere */
+    details.calendar-range > summary::-webkit-details-marker { display:none; }
+
+    /* Custom marker: small caret/triangle */
+    details.calendar-range > summary::before {
+      content:"";
+      display:inline-block;
+      width:0;
+      height:0;
+      border-left:4px solid transparent;
+      border-right:4px solid transparent;
+      border-top:6px solid currentColor; /* down-caret */
+      opacity:0.85;
+      transform:rotate(-90deg); /* closed = points right */
+      transform-origin:50% 50%;
+      transition:transform .12s ease, opacity .12s ease;
+    }
 
     details.calendar-range[open] > summary {
       color:var(--text);
+    }
+    details.calendar-range[open] > summary::before {
+      transform:rotate(0deg); /* open = points down */
+      opacity:1;
     }
 
     /* Inner panel that appears when open */
@@ -327,7 +363,7 @@
             <span id="toolNameHeading">AVD Overtime Calculator</span>
             <button id="copyVersionBtn" class="version-btn" type="button"
                     title="Copy full index.html to clipboard"
-                    aria-label="Copy full index.html to clipboard">v0.12</button>
+                    aria-label="Copy full index.html to clipboard">v0.13</button>
           </h1>
           <div class="muted" id="toolShortDescription">
             Daily overtime calculator with optional Google Calendar event picker.
@@ -349,7 +385,7 @@
               </div>
               <div>
                 <div class="tool-info-item-label">Version</div>
-                <div class="tool-info-item-value" id="toolVersionInfo">v0.12</div>
+                <div class="tool-info-item-value" id="toolVersionInfo">v0.13</div>
               </div>
               <div>
                 <div class="tool-info-item-label">Last updated</div>
@@ -637,7 +673,7 @@
         If clipboard fails on iOS, you can copy the full page from here.
       </div>
       <div style="margin-top:8px;">
-        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.12) to generate this…"></textarea>
+        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.13) to generate this…"></textarea>
       </div>
       <div class="btnrow">
         <button id="copyReplacementBtn" type="button">Copy this text</button>
@@ -650,6 +686,11 @@
       ============================================================
       AVD OT-CALC — TOOL CONSTITUTION + GUARD RAILS (CODEX ONLY)
       ============================================================
+
+      Read-first doc:
+      - ./CODEX.md
+      Optional richer doc (if created later):
+      - ./context/OT-CALC.md
 
       Purpose:
       - Provide a stable overtime calculator with optional Google Calendar event picker.
@@ -669,24 +710,31 @@
       3) UX constraints:
          - Advanced date range must be a <details>/<summary> disclosure row (not a button).
          - Disclosure is closed by default on refresh.
+         - Disclosure marker must be a consistent caret/triangle that rotates on open.
 
       4) Persistence:
-         - Keep STORAGE_KEY stable unless explicitly migrating saved state.
+         - Keep STORAGE_KEY and OPENAI_KEY_STORAGE stable unless explicitly migrating saved state.
 
       5) Safe edits:
          - Do not refactor unrelated sections.
          - No silent changes to rate rules, grace rules, or checkbox semantics.
 
-      Example:
-      - User signs in → events load → latest event auto-fills job/date.
-      - User opens “Advanced date range”, changes dates, clicks Apply → list refreshes immediately.
+      Allowed edits (without explicit product sign-off):
+      - Styling tweaks, spacing, wording, accessibility tweaks.
+      - Adding new model fallbacks to MODEL_CANDIDATES.
+      - Adding optional hidden panels via <details> that do not change core behaviours.
+
+      Disallowed (unless explicitly requested):
+      - Changing overtime logic, deductions, or checkbox meanings.
+      - Changing event sort order or auto-fill behaviour.
+      - Changing localStorage keys without migration plan.
     */
 
     // =========================
     // TOOL METADATA CONSTANTS
     // =========================
     const TOOL_NAME = "AVD Overtime Calculator";
-    const TOOL_VERSION = "v0.12";
+    const TOOL_VERSION = "v0.13";
     const TOOL_LAST_UPDATED = "2025-12-20";
     const TOOL_CODE = "OT-CALC";
 
@@ -1090,7 +1138,7 @@
         leaveTime: document.getElementById("leaveTime").value || "07:45",
         returnTime: document.getElementById("returnTime").value || "",
         totalWorked: fmtHours(r.totalWorked),
-        // Total Overtime column now reflects payable OT (after 15m deductions),
+        // Total Overtime column reflects payable OT (after 15m deductions),
         // which matches the OT Due calculation.
         totalOT: fmtHours(r.totalOTPayable),
         otDue: fmtMoney(r.otDue)
