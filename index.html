@@ -214,9 +214,6 @@
       details.tool-info { background:#f3f4f6; }
     }
 
-    /* Hidden by default; revealed via Step 1 toggle button */
-    details.calendar-range { display:none; }
-
     details.debug summary,
     details.api summary,
     details.calendar-settings summary,
@@ -263,6 +260,60 @@
       margin-bottom:2px;
     }
     .tool-info-item-value { font-size:13px; }
+
+    /* ============================
+       Step 1: Advanced date range
+       (match screenshot style)
+       ============================ */
+
+    /* Make the disclosure look like a simple inline row, not a button */
+    details.calendar-range {
+      background:transparent;
+      border:none;
+      padding:0;
+      margin-top:8px;
+    }
+
+    details.calendar-range > summary {
+      list-style: none;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:0;
+      border:none;
+      background:transparent;
+      user-select:none;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    /* keep native marker but soften it */
+    details.calendar-range > summary::-webkit-details-marker { opacity:0.75; }
+
+    details.calendar-range[open] > summary {
+      color:var(--text);
+    }
+
+    /* Inner panel that appears when open */
+    .range-panel {
+      margin-top:10px;
+      padding:12px;
+      border-radius:12px;
+      background:rgba(2,6,23,0.35);
+      border:1px dashed var(--border);
+    }
+    @media (prefers-color-scheme: light) {
+      .range-panel { background:rgba(248,250,252,0.8); }
+    }
+
+    .range-actions {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .range-actions .small-note { margin-top:0; }
   </style>
 </head>
 
@@ -276,7 +327,7 @@
             <span id="toolNameHeading">AVD Overtime Calculator</span>
             <button id="copyVersionBtn" class="version-btn" type="button"
                     title="Copy full index.html to clipboard"
-                    aria-label="Copy full index.html to clipboard">v0.11</button>
+                    aria-label="Copy full index.html to clipboard">v0.12</button>
           </h1>
           <div class="muted" id="toolShortDescription">
             Daily overtime calculator with optional Google Calendar event picker.
@@ -298,7 +349,7 @@
               </div>
               <div>
                 <div class="tool-info-item-label">Version</div>
-                <div class="tool-info-item-value" id="toolVersionInfo">v0.11</div>
+                <div class="tool-info-item-value" id="toolVersionInfo">v0.12</div>
               </div>
               <div>
                 <div class="tool-info-item-label">Last updated</div>
@@ -340,34 +391,34 @@
           </div>
         </div>
 
-        <!-- Advanced toggle (reveals the details section below) -->
-        <div class="btnrow" style="margin-top:10px;">
-          <button id="toggleAdvancedRange" type="button">Advanced Date Range</button>
-        </div>
-
-        <!-- Advanced date range (hidden by default; revealable) -->
+        <!-- Advanced date range (disclosure row like screenshots; closed by default) -->
         <details class="calendar-range" id="advancedRangeDetails">
-          <summary>Advanced: custom calendar date range</summary>
+          <summary>Advanced date range</summary>
 
-          <div class="grid" style="margin-top:8px;">
-            <div>
-              <label for="fromDate">From</label>
-              <input id="fromDate" type="date" />
-              <div class="small-note">Defaults to last 14 days.</div>
+          <div class="range-panel">
+            <div class="grid">
+              <div>
+                <label for="fromDate">Start date</label>
+                <input id="fromDate" type="date" />
+                <div class="small-note">Defaults to 14 days ago.</div>
+              </div>
+              <div>
+                <label for="toDate">End date</label>
+                <input id="toDate" type="date" />
+                <div class="small-note">Defaults to today (you can set a future end date).</div>
+              </div>
             </div>
-            <div>
-              <label for="toDate">To</label>
-              <input id="toDate" type="date" />
-              <div class="small-note">Defaults to today (you can set a future end date).</div>
+
+            <div class="range-actions">
+              <button id="applyRangeBtn" type="button">Apply date range</button>
+              <div class="small-note">Loads events inside this range (future events included).</div>
+            </div>
+
+            <div class="range-actions" style="margin-top:8px;">
+              <button id="resetRangeBtn" type="button">Reset to last 14 days</button>
+              <div id="rangeStatus" class="small-note"></div>
             </div>
           </div>
-
-          <div class="btnrow">
-            <button id="applyRangeBtn" type="button">Apply date range</button>
-            <button id="resetRangeBtn" type="button">Reset to last 14 days</button>
-          </div>
-
-          <div id="rangeStatus" class="small-note"></div>
         </details>
       </div>
 
@@ -586,7 +637,7 @@
         If clipboard fails on iOS, you can copy the full page from here.
       </div>
       <div style="margin-top:8px;">
-        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.11) to generate this…"></textarea>
+        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.12) to generate this…"></textarea>
       </div>
       <div class="btnrow">
         <button id="copyReplacementBtn" type="button">Copy this text</button>
@@ -595,11 +646,47 @@
   </div>
 
   <script>
+    /*
+      ============================================================
+      AVD OT-CALC — TOOL CONSTITUTION + GUARD RAILS (CODEX ONLY)
+      ============================================================
+
+      Purpose:
+      - Provide a stable overtime calculator with optional Google Calendar event picker.
+      - Calendar picker is convenience only; manual entry must always work.
+
+      Non-negotiables / invariants:
+      1) Calendar flow:
+         - After OAuth success (“Signed in”), auto-fetch events for default range.
+         - Events sorted newest-first, auto-select most recent, auto-fill job/date.
+         - “Apply date range” re-fetches immediately; no extra “load” button required.
+
+      2) Overtime logic integrity:
+         - OT Due is based on payable overtime minutes.
+         - “Total overtime” in table/report must match payable minutes (after 15m deductions),
+           so finance can verify OT Due directly.
+
+      3) UX constraints:
+         - Advanced date range must be a <details>/<summary> disclosure row (not a button).
+         - Disclosure is closed by default on refresh.
+
+      4) Persistence:
+         - Keep STORAGE_KEY stable unless explicitly migrating saved state.
+
+      5) Safe edits:
+         - Do not refactor unrelated sections.
+         - No silent changes to rate rules, grace rules, or checkbox semantics.
+
+      Example:
+      - User signs in → events load → latest event auto-fills job/date.
+      - User opens “Advanced date range”, changes dates, clicks Apply → list refreshes immediately.
+    */
+
     // =========================
     // TOOL METADATA CONSTANTS
     // =========================
     const TOOL_NAME = "AVD Overtime Calculator";
-    const TOOL_VERSION = "v0.11";
+    const TOOL_VERSION = "v0.12";
     const TOOL_LAST_UPDATED = "2025-12-20";
     const TOOL_CODE = "OT-CALC";
 
@@ -1385,21 +1472,16 @@ Access: key safe by side door.`;
       ensureCalendarRangeInputs();
       initAuth(); // init early; still safe if google lib not ready
 
-      // default range status text (even though advanced is hidden)
+      // Ensure advanced range is collapsed by default each refresh
+      const adv = document.getElementById("advancedRangeDetails");
+      if (adv) adv.open = false;
+
+      // default range status text
       const def = defaultCalendarRange();
       const rs = document.getElementById("rangeStatus");
       if (rs) rs.textContent = `Using default range: last 14 days (${def.from} → ${def.to})`;
 
       document.getElementById("signin").onclick = signIn;
-
-      // Step 1: reveal/hide Advanced Date Range section
-      document.getElementById("toggleAdvancedRange").onclick = () => {
-        const det = document.getElementById("advancedRangeDetails");
-        if (!det) return;
-        const currentlyHidden = (getComputedStyle(det).display === "none");
-        det.style.display = currentlyHidden ? "block" : "none";
-        if (currentlyHidden) det.open = true;
-      };
 
       // Advanced range controls
       const applyBtn = document.getElementById("applyRangeBtn");
