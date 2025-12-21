@@ -1,23 +1,26 @@
 # AVD Tools — Codex Front Door
 
-This repository contains AVD single‑file tools (static `index.html`) with a shared UI/behaviour template.
+## Shared invariants (apply to all AVD tools)
 
-## Non‑negotiables (apply to all tools)
+- **Version pill:** `v0.10+` and **increment on every index.html change**.
+- **Details panels:** all `<details>` panels are **closed by default on refresh**.
+- When a `<details>` opens, it **highlights** (accent border + subtle fill) while keeping the **dashed border + padded container** styling.
+- All `<details>` (including nested) use the **same caret marker** that rotates on open.
 
-- **Be Strict:** never invent facts, never silently change core business logic or calculations.
-- **Minimise edits:** avoid refactors unless explicitly requested; keep unrelated sections untouched.
-- **Versioning:** version pill uses semantic `v0.xx` and must be updated when behaviour/UI changes.
-- **Hidden-by-default panels:** Debug, API key, AI Debugger, Replacement index output, Calendar settings.
-- **Shared OpenAI key:** `localStorage['avd_job_report_openai_key']` (same key across tools).
+This repo contains single-file HTML tools used by Audio Visual Direct UK (AVD).
 
-## OT-CALC (AVD Overtime Calculator)
+## Core conventions (do not break)
 
-- **Tool code:** `OT-CALC`
-- **Core purpose:** daily overtime calculation + optional Google Calendar event picker convenience.
-- **Calendar behaviour:** after OAuth success, auto-fetch events (default last 14 days), newest-first, auto-fill from latest event.
-- **Advanced date range:** must be a `<details>/<summary>` disclosure row (not a button), closed by default, with a consistent caret marker.
-- **Overtime integrity:** “Total overtime” in log/PDF must match payable overtime (after 15m deductions) and therefore align with OT Due.
+- **Single-file**: each tool is a standalone `index.html`.
+- **Version pill**: semantic version `v0.xx` in header; clicking copies full `index.html` to clipboard and also populates the “Replacement index.html output” panel.
+- **Hidden-by-default panels**: Debug, API key, AI Debugger, Replacement output, Calendar settings, Tool info.
+- **OpenAI key storage**: shared localStorage key: `avd_job_report_openai_key`.
+- **UI details consistency**:
+  - All `<details>` components are **closed on every page refresh**.
+  - When open, the `<summary>` row **highlights** (same visual language across tools).
+  - `<details>` containers use **dashed border + padded container** styling.
+  - Nested `<details>` automatically inherit the same caret + open highlight styling.
 
-## Where the full details live
+## Tool-specific manuals
 
-- `context/OT-CALC.md` — invariants, regression checks, and implementation notes.
+- `context/OT-CALC.md` — AVD Overtime Calculator (TOOL_CODE: `OT-CALC`)
