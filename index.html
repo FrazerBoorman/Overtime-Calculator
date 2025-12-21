@@ -1,16 +1,17 @@
 <!--
-====================================================================
-CODEX BANNER (STANDARD — DO NOT REMOVE)
-====================================================================
-Tool: AVD Overtime Calculator
-Tool code: OT-CALC
-Version: v0.13
-Last updated: 2025-12-21
+=========================================================================================================================
+AVD TOOL — CODEX FRONT-DOOR BANNER (IDENTICAL ACROSS TOOLS)
+=========================================================================================================================
 
-Codex pointers:
-- Read root CODEX.md first (high-level behaviour + non-negotiables).
-- Then read context/OT-CALC.md (full detail, invariants, regression checks).
-====================================================================
+TOOL_CODE: OT-CALC
+TOOL_NAME: AVD Overtime Calculator
+VERSION: v0.12
+LAST_UPDATED: 2025-12-20
+
+CODEX POINTERS:
+- Repo root: CODEX.md (high-level behaviours + keys)
+- Full tool manual: context/OT-CALC.md (invariants + regression checks)
+=========================================================================================================================
 -->
 <!doctype html>
 <html lang="en">
@@ -204,44 +205,6 @@ Codex pointers:
     .logbox { border:2px dashed var(--border); border-radius:10px; padding:10px; background:var(--panel); }
     .badge { display:inline-block; font-size:12px; border:1px solid var(--border); padding:2px 8px; border-radius:999px; color:var(--muted); }
 
-    details.debug,
-    details.api,
-    details.calendar-settings,
-    details.ai-debugger,
-    details.replacement-output,
-    details.calendar-range,
-    details.tool-info {
-      margin-top:10px;
-      border-radius:12px;
-      border:1px dashed var(--border);
-      padding:8px 10px;
-      background:rgba(15,23,42,0.4);
-      font-size:11px;
-    }
-    @media (prefers-color-scheme: light) {
-      details.debug,
-      details.api,
-      details.calendar-settings,
-      details.ai-debugger,
-      details.replacement-output,
-      details.calendar-range,
-      details.tool-info { background:#f3f4f6; }
-    }
-
-    details.debug summary,
-    details.api summary,
-    details.calendar-settings summary,
-    details.ai-debugger summary,
-    details.replacement-output summary,
-    details.calendar-range summary,
-    details.tool-info summary {
-      cursor:pointer;
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    details.debug pre { white-space:pre-wrap; font-size:11px; margin-top:4px; }
-
     .flag-row {
       display:flex;
       flex-wrap:wrap;
@@ -276,75 +239,114 @@ Codex pointers:
     .tool-info-item-value { font-size:13px; }
 
     /* ============================
-       Step 1: Advanced date range
-       (match screenshot style)
+       Details (all hidden tabs)
+       - closed by default via JS
+       - dashed bordered containers
+       - highlight when open
+       - consistent caret marker
        ============================ */
 
-    /* Make the disclosure look like a simple inline row, not a button */
-    details.calendar-range {
-      background:transparent;
-      border:none;
-      padding:0;
-      margin-top:8px;
-    }
-
-    details.calendar-range > summary {
-      list-style:none;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:0;
-      border:none;
-      background:transparent;
-      user-select:none;
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    /* Remove native markers to avoid double-indicator */
-    details.calendar-range > summary::-webkit-details-marker { display:none; }
-    details.calendar-range > summary::marker { content:""; }
-
-    /* Custom caret marker (consistent across tools/browsers) */
-    .adv-caret {
-      width:0; height:0;
-      border-left:5px solid transparent;
-      border-right:5px solid transparent;
-      border-top:7px solid currentColor;
-      opacity:0.9;
-      transform: rotate(-90deg); /* closed: points right */
-      transition: transform .12s ease, opacity .12s ease;
-      display:inline-block;
-    }
-
-    details.calendar-range[open] > summary .adv-caret {
-      transform: rotate(0deg); /* open: points down */
-      opacity:1;
-    }
-
-    details.calendar-range[open] > summary {
-      color:var(--text);
-    }
-
-    /* Inner panel that appears when open */
-    .range-panel {
+    details.debug,
+    details.api,
+    details.calendar-settings,
+    details.ai-debugger,
+    details.replacement-output,
+    details.calendar-range,
+    details.tool-info {
       margin-top:10px;
-      padding:12px;
       border-radius:12px;
-      background:rgba(2,6,23,0.35);
       border:1px dashed var(--border);
+      padding:10px 12px;
+      background:rgba(15,23,42,0.4);
+      font-size:11px;
+      transition: border-color .12s ease, background .12s ease, box-shadow .12s ease;
     }
     @media (prefers-color-scheme: light) {
-      .range-panel { background:rgba(248,250,252,0.8); }
+      details.debug,
+      details.api,
+      details.calendar-settings,
+      details.ai-debugger,
+      details.replacement-output,
+      details.calendar-range,
+      details.tool-info { background:#f3f4f6; }
     }
 
-    .range-actions {
+    details.debug[open],
+    details.api[open],
+    details.calendar-settings[open],
+    details.ai-debugger[open],
+    details.replacement-output[open],
+    details.calendar-range[open],
+    details.tool-info[open] {
+      border-color:var(--accent);
+      background:var(--accent-soft);
+      box-shadow:0 10px 22px rgba(15,23,42,0.35);
+    }
+
+    details.debug summary,
+    details.api summary,
+    details.calendar-settings summary,
+    details.ai-debugger summary,
+    details.replacement-output summary,
+    details.calendar-range summary,
+    details.tool-info summary {
+      cursor:pointer;
+      font-size:12px;
+      color:var(--muted);
       display:flex;
       align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-top:10px;
+      gap:6px;
+      user-select:none;
+      list-style:none; /* Firefox */
     }
+
+    /* Hide native markers so our caret is consistent */
+    details.debug summary::-webkit-details-marker,
+    details.api summary::-webkit-details-marker,
+    details.calendar-settings summary::-webkit-details-marker,
+    details.ai-debugger summary::-webkit-details-marker,
+    details.replacement-output summary::-webkit-details-marker,
+    details.calendar-range summary::-webkit-details-marker,
+    details.tool-info summary::-webkit-details-marker { display:none; }
+
+    details.debug summary::before,
+    details.api summary::before,
+    details.calendar-settings summary::before,
+    details.ai-debugger summary::before,
+    details.replacement-output summary::before,
+    details.calendar-range summary::before,
+    details.tool-info summary::before {
+      content:"▸";
+      display:inline-block;
+      color:var(--muted);
+      transform:translateY(-0.5px);
+      transition: transform .12s ease, color .12s ease;
+    }
+
+    details.debug[open] summary::before,
+    details.api[open] summary::before,
+    details.calendar-settings[open] summary::before,
+    details.ai-debugger[open] summary::before,
+    details.replacement-output[open] summary::before,
+    details.calendar-range[open] summary::before,
+    details.tool-info[open] summary::before {
+      transform:rotate(90deg);
+      color:var(--accent);
+    }
+
+    details.debug[open] summary,
+    details.api[open] summary,
+    details.calendar-settings[open] summary,
+    details.ai-debugger[open] summary,
+    details.replacement-output[open] summary,
+    details.calendar-range[open] summary,
+    details.tool-info[open] summary { color:var(--text); }
+
+    details.debug pre { white-space:pre-wrap; font-size:11px; margin-top:6px; }
+
+    /* Advanced date range inner helpers (no extra box inside the details) */
+    .range-panel { margin-top:10px; padding:0; border:none; background:transparent; }
+    .range-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px; }
     .range-actions .small-note { margin-top:0; }
   </style>
 </head>
@@ -359,7 +361,7 @@ Codex pointers:
             <span id="toolNameHeading">AVD Overtime Calculator</span>
             <button id="copyVersionBtn" class="version-btn" type="button"
                     title="Copy full index.html to clipboard"
-                    aria-label="Copy full index.html to clipboard">v0.13</button>
+                    aria-label="Copy full index.html to clipboard">v0.12</button>
           </h1>
           <div class="muted" id="toolShortDescription">
             Daily overtime calculator with optional Google Calendar event picker.
@@ -381,11 +383,11 @@ Codex pointers:
               </div>
               <div>
                 <div class="tool-info-item-label">Version</div>
-                <div class="tool-info-item-value" id="toolVersionInfo">v0.13</div>
+                <div class="tool-info-item-value" id="toolVersionInfo">v0.12</div>
               </div>
               <div>
                 <div class="tool-info-item-label">Last updated</div>
-                <div class="tool-info-item-value" id="toolLastUpdatedInfo">2025-12-21</div>
+                <div class="tool-info-item-value" id="toolLastUpdatedInfo">2025-12-20</div>
               </div>
               <div>
                 <div class="tool-info-item-label">Tool code</div>
@@ -423,9 +425,9 @@ Codex pointers:
           </div>
         </div>
 
-        <!-- Advanced date range (disclosure row like screenshots; closed by default) -->
+        <!-- Advanced date range (closed by default on refresh) -->
         <details class="calendar-range" id="advancedRangeDetails">
-          <summary><span class="adv-caret" aria-hidden="true"></span>Advanced date range</summary>
+          <summary>Advanced date range</summary>
 
           <div class="range-panel">
             <div class="grid">
@@ -669,7 +671,7 @@ Codex pointers:
         If clipboard fails on iOS, you can copy the full page from here.
       </div>
       <div style="margin-top:8px;">
-        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.13) to generate this…"></textarea>
+        <textarea id="replacementIndexOutput" rows="10" placeholder="Click the version pill (v0.12) to generate this…"></textarea>
       </div>
       <div class="btnrow">
         <button id="copyReplacementBtn" type="button">Copy this text</button>
@@ -682,10 +684,6 @@ Codex pointers:
       ============================================================
       AVD OT-CALC — TOOL CONSTITUTION + GUARD RAILS (CODEX ONLY)
       ============================================================
-
-      Pointer:
-      - Root: CODEX.md (front door).
-      - Full: context/OT-CALC.md (service manual).
 
       Purpose:
       - Provide a stable overtime calculator with optional Google Calendar event picker.
@@ -703,9 +701,8 @@ Codex pointers:
            so finance can verify OT Due directly.
 
       3) UX constraints:
-         - Advanced date range must be a <details>/<summary> disclosure row (not a button).
-         - Disclosure is closed by default on refresh.
-         - Disclosure shows a consistent caret marker (rotates closed→open).
+         - Advanced date range must remain a <details>/<summary> disclosure.
+         - All details panels are collapsed by default on refresh.
 
       4) Persistence:
          - Keep STORAGE_KEY stable unless explicitly migrating saved state.
@@ -713,14 +710,18 @@ Codex pointers:
       5) Safe edits:
          - Do not refactor unrelated sections.
          - No silent changes to rate rules, grace rules, or checkbox semantics.
+
+      Example:
+      - User signs in → events load → latest event auto-fills job/date.
+      - User opens “Advanced date range”, changes dates, clicks Apply → list refreshes immediately.
     */
 
     // =========================
     // TOOL METADATA CONSTANTS
     // =========================
     const TOOL_NAME = "AVD Overtime Calculator";
-    const TOOL_VERSION = "v0.13";
-    const TOOL_LAST_UPDATED = "2025-12-21";
+    const TOOL_VERSION = "v0.12";
+    const TOOL_LAST_UPDATED = "2025-12-20";
     const TOOL_CODE = "OT-CALC";
 
     // =========================
@@ -1505,9 +1506,8 @@ Access: key safe by side door.`;
       ensureCalendarRangeInputs();
       initAuth(); // init early; still safe if google lib not ready
 
-      // Ensure advanced range is collapsed by default each refresh
-      const adv = document.getElementById("advancedRangeDetails");
-      if (adv) adv.open = false;
+      // Ensure all <details> panels are collapsed by default on each refresh
+      document.querySelectorAll("details").forEach(d => { d.open = false; });
 
       // default range status text
       const def = defaultCalendarRange();
