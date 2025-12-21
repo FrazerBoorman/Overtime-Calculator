@@ -1,124 +1,91 @@
-# OT-CALC — AVD Overtime Calculator (Service Manual)
+# OT-CALC
+
+## Shared invariants
+- All `<details>` panels are closed by default on refresh.
+- Open `<details>` highlights (accent border + subtle fill) while keeping dashed + padded container styling.
+- All `<details>` (including nested) use the same caret marker that rotates on open.
+- Version pill increments on every index change.
+ — AVD Overtime Calculator (Service Manual)
 
 ## Purpose
 
-A stable daily overtime calculator for AVD engineers, with an **optional** Google Calendar event picker to reduce typing.
-Manual entry must always work, even if Calendar/OAuth fails.
+A stable daily overtime calculator with optional Google Calendar event picker.
 
-## Files
+- Calendar picker is convenience only; manual entry must always work.
+- Provides a log table and printable PDF export for sign-off.
 
-- `index.html` — single-file tool (UI + logic).
-- `CODEX.md` — high-level behaviour and non-negotiables (front door).
-- `context/OT-CALC.md` — this document (full detail).
+## Non‑negotiables / invariants
 
-## Tool identifiers
+### 1) Calendar flow
 
-- **TOOL_CODE:** `OT-CALC`
-- **Storage key (must stay stable):** `avd_ot_stable_calendar_autofetch_v4_4`
-- **Shared OpenAI key localStorage:** `avd_job_report_openai_key`
+- After OAuth success (“Signed in”), auto-fetch events for the default range.
+- Events are sorted **newest-first** in the dropdown.
+- Auto-select the most recent event and auto-fill Job/Location + Date.
+- Applying or resetting the advanced date range **re-fetches immediately** (no extra “Load” button).
 
-## UX invariants
+### 2) Advanced date range UX (must match other AVD tools)
 
-### Advanced date range disclosure
+- Implemented as a native `<details>/<summary>` disclosure row.
+- **Closed by default on every refresh**.
+- All `<details>` (including nested) share:
+  - a consistent caret/triangle indicator
+  - “open” highlight on the `<summary>`
+  - dashed border + padded container styling
 
-- Must be `<details class="calendar-range" id="advancedRangeDetails">`.
-- **Closed by default on refresh** (`adv.open = false` on DOMContentLoaded).
-- Must look like a **simple disclosure row**, not a button.
-- Must have a **consistent caret marker** (custom triangle), and rotate on open/close.
-- Inner panel appears only when open; no extra “Load” button is required beyond Apply/Reset.
+### 3) Overtime logic integrity
 
-### Hidden-by-default panels
+- Overtime is time **before 09:00** and **after 17:00**.
+- Apply the 15-minute deduction(s):
+  - Field day: deduct 15 minutes from pre-09 and 15 minutes from post-17 (when present).
+  - Office-finish day: deduct 15 minutes from pre-09 only; no post-17 overtime.
+  - Full office/admin day: no overtime.
+- **OT Due** is based on payable overtime minutes (after deductions).
+- “Total overtime” in the table/report must reflect payable minutes so finance can verify OT Due directly.
 
-These are part of the shared template:
-- Debug panel
-- Calendar settings
-- API key panel
-- AI Debugger
-- Replacement index.html output
+### 4) Persistence
 
-## Calendar behaviour invariants
+- Keep `STORAGE_KEY` stable unless explicitly migrating saved state.
+- Persist:
+  - log table rows
+  - base rate
+  - calendar ID
+  - employee name (default “Frazer” if unavailable)
 
-### OAuth + auto-fetch
+### 5) Safe edits discipline
 
-- On OAuth success:
-  - status shows **Signed in**
-  - `fetchEvents()` is called automatically (default range)
+- Do not refactor unrelated sections.
+- No silent changes to time rules, deduction logic, checkbox semantics, or export format.
 
-### Default range
+## Regression checklist (run after any change)
 
-- Default range is last 14 days **including today**:
-  - start = today - 13 days
-  - end = today
-- Advanced range inputs mirror the effective range:
-  - if not using custom range, they are set to default every fetch
-  - if using custom, their values drive the range
+### Visual / UX
 
-### Event list
+- [ ] All `<details>` are closed after refresh (tool info, debug, API, AI debugger, replacement output, calendar settings, advanced date range).
+- [ ] Any open `<details>` summary row highlights correctly.
+- [ ] Caret indicator appears on all summaries, including nested `<details>`.
+- [ ] `<details>` containers have dashed border + padded container.
+- [ ] Advanced date range summary looks like a disclosure row (not a button).
 
-- Events are sorted **newest first**
-- Dropdown shows `Title — YYYY-MM-DD`
-- Tool auto-selects the most recent event and auto-fills:
-  - Job/Location: derived from option text before `—`
-  - Date: from event start date
+### Calendar
 
-### Apply / Reset
+- [ ] Sign in → events auto-load for default range.
+- [ ] Dropdown lists newest-first.
+- [ ] Latest event auto-fills Job/Location + Date.
+- [ ] Apply date range → immediate re-fetch with custom range (future allowed).
+- [ ] Reset → returns to default range and re-fetches.
 
-- Apply:
-  - sets `USE_CUSTOM_RANGE = true`
-  - updates rangeStatus text
-  - immediately re-fetches events
-- Reset:
-  - sets `USE_CUSTOM_RANGE = false`
-  - restores default last-14-days dates
-  - updates rangeStatus text
-  - immediately re-fetches events
+### Overtime maths
 
-### Future events
+- [ ] Field day: deductions apply as expected.
+- [ ] Office-finish: no post-17 OT, pre-09 deduction applies.
+- [ ] Full office/admin: OT always 0.
+- [ ] Table “Total overtime” equals payable minutes used for OT Due.
+- [ ] PDF totals match table totals.
 
-- The tool must not block future end dates.
-- When `toDate` is set in the future, events within that range should still load.
+## Key implementation notes (for Codex)
 
-## Overtime calculation invariants
-
-### Time boundaries
-
-- `GRACE_END = 09:00`
-- `CORE_END = 17:00`
-
-### Deductions and payable overtime
-
-- Pre‑09:00 overtime and post‑17:00 overtime each have a **15 minute deduction** when they exist, with special handling:
-  - Field day:
-    - if pre-09 overtime exists: deduct 15 minutes
-    - if post-17 overtime exists: deduct 15 minutes
-  - Office-finish day:
-    - cap day at 17:00
-    - keep pre-09 overtime with a 15 minute deduction
-    - **no post-17 overtime**
-  - Full office/admin day:
-    - **no overtime at all** (both pre and post set to 0)
-
-### OT Due and reporting integrity
-
-- `OT Due` is calculated using **payable** overtime minutes (after deductions).
-- The log table’s “Total overtime” column must reflect **payable** overtime, so that OT Due can be validated directly.
-- The PDF export totals must sum the values shown in the table.
-
-## Regression checklist (quick)
-
-1. Refresh page → Advanced date range is closed.
-2. Advanced row looks like an inline disclosure (not a button) and shows the caret marker.
-3. Open Advanced → caret rotates; inner panel appears.
-4. Sign in → events load automatically; newest-first; latest event auto-fills job + date.
-5. Set custom range → Apply → events refresh immediately without extra clicks.
-6. Reset → returns to last 14 days and refreshes immediately.
-7. Calculation:
-   - pre-09 and post-17 deductions apply correctly
-   - “Total overtime” equals payable minutes
-   - OT Due matches payable minutes * rate
-
-## Safe-edit rules for this tool
-
-- Do not rename IDs used in JS unless updating all references.
-- Do not change `STORAGE_KEY` unless explicitly implementing a migration.
-- Avoid style refactors that change the shared look; changes should be localised.
+- Advanced range state is controlled by `USE_CUSTOM_RANGE`.
+- Default range = last 14 days inclusive.
+- Sorting newest-first is applied after fetching.
+- “All details closed on refresh” should be done centrally (e.g., `document.querySelectorAll("details").forEach(d=>d.open=false);`)
+  so nested disclosures inherit behavior with no per-panel special cases.
